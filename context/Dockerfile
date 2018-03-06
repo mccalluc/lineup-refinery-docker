@@ -7,5 +7,7 @@ RUN npm install
 RUN npm run build
 
 
-FROM nginx:1.13.9-alpine AS deploy
+FROM nginx:1.13.9-alpine
 COPY --from=build /lineup/build /usr/share/nginx/html
+
+CMD "nginx" "-g" "daemon off;"

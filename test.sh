@@ -7,7 +7,7 @@ end() { set +v; echo travis_fold':'end:$1; echo; echo; }
 die() { set +v; echo "$*" 1>&2 ; exit 1; }
 retry() {
     TRIES=1
-    until curl --silent --fail http://localhost:$PORT/ > /dev/null; do
+    until curl --silent --fail http://localhost:$PORT/ > /tmp/response.txt; do
         echo "$TRIES: not up yet"
         if (( $TRIES > 10 )); then
             $OPT_SUDO docker logs $CONTAINER_NAME
@@ -16,6 +16,8 @@ retry() {
         (( TRIES++ ))
         sleep 1
     done
+    echo 'Container responded with:'
+    head -n50 /tmp/response.txt
 }
 PORT=8888
 
