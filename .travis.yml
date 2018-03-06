@@ -1,24 +1,25 @@
-# "sudo" is needed just for Docker
 sudo: required
 script:
-- ./test.sh
+- "./test.sh"
 after_success:
 - source define_repo.sh
 - tag_push() { echo "Tagging into $2"; sudo docker tag $1 $2; sudo docker push $2; }
-
 - sudo docker login -u $DOCKER_USER -p $DOCKER_PASS
-# Always update "latest": the cache will be used for the next build.
 - tag_push $IMAGE $REPO
-- >
-    if [ "$TRAVIS_EVENT_TYPE" == "pull_request" ]; then
-      echo "PR!";
-      BRANCH=`echo ${TRAVIS_PULL_REQUEST_BRANCH:-$TRAVIS_BRANCH} | perl -pne 'chomp;s{.*/}{};s/\W/-/g'`;
-      tag_push $IMAGE $REPO:$BRANCH;
-      tag_push $IMAGE $REPO:latest-pr;
-    fi
-- >
-    if [ ! -z "$TRAVIS_TAG" ]; then
-      echo "Git tag!";
-      tag_push $IMAGE $REPO:$TRAVIS_TAG;
-      tag_push $IMAGE $REPO:latest;
-    fi
+- |
+  if [ "$TRAVIS_EVENT_TYPE" == "pull_request" ]; then
+    echo "PR!";
+    BRANCH=`echo ${TRAVIS_PULL_REQUEST_BRANCH:-$TRAVIS_BRANCH} | perl -pne 'chomp;s{.*/}{};s/\W/-/g'`;
+    tag_push $IMAGE $REPO:$BRANCH;
+    tag_push $IMAGE $REPO:latest-pr;
+  fi
+- |-
+  if [ ! -z "$TRAVIS_TAG" ]; then
+    echo "Git tag!";
+    tag_push $IMAGE $REPO:$TRAVIS_TAG;
+    tag_push $IMAGE $REPO:latest;
+  fi
+env:
+  matrix:
+  - secure: NUS11/FFJZQ6EgEy6zWoGAYttTBUpIVGQpfTor61cZavFtC6xFU4qgp66VmmP94w1QKviOyJ3ZgJQxOihc7ahEAr9VzXX8mkrxIBEroQzEoOkwc8EYYJ0vNUSnboP+R5GSYUc19XKF9zlMeM34OmsCdOGFEuXzY8zlHURBb3ecrSQJUB+cfRPlzl0jwbyMvCtkW4eMS760cnGfzECut2hCwkA8FCDI5CbLUrhX6rvwNd03FHu6e3dvLPFv2LaqQ43qI0GWLVmSPUtJ1OEB9z40CE8vfU1OBBrtxps1CnDc/BU8Zp0CGEmWJYuYYlFl8w5AyYXdG9IND7VIY84xhZsQ2txgODECcj1WP861rjF2eG+Zr0UZovWXs/8LP2NdF0MAEBIzf2hF+0xLKBkbUNCoW8OKxW7oqyHFTixHfdRgJ41UDP9pcYO8otLw+ynau7P/1+Kxu+LcoUe/oXrERdihsurkKHBfYIIyifDzLRLFFTyq1PDkk30/6ucFExm82EVAVjN3O21QB1YyfecHV0Otx7a/GvRYBqsxQeswxQ2q7jOSl0jAp5K3LRYr5mwTIqLw3yHvp2i4dE6ypysNuCkr+H4TnHUoPo3vCSBNacVsMbzEO29ARpdTZh8MQPRGzTmRmGLTahqw1YPLrkqPCQo0M9YaTweMBPQ0l1vrn/R6Q=
+  - secure: QruzfBlVOQQXBPbT3jWAWQW8Lb2JdAntN9IEb/Gdi0zP8pdQ3lQ6AuHy4sjZQ2qFH1oIoUUCZEanBOH0z1K8setClVwMZz+uaSp5T4lZ7Yr1Sm+C7dXK2jbPQRGi8QVdzDnDZgGKJ+IKSoJdqhHyb6H8j6LKVtoP/b4lXDdRzQ+e63D6wvtdEtunbfWoU0Iil9zObhEKGRc9yC98Id+X7tvn+ulI8OOe28E0dplHgZqUo0D08CmInXIV39kCLVTahq9NHlVUbRI6sZ6yj+XGvU7TJYooToIQfQmI1CBQt1HB48BpoDVG6pswEvaKTR+5KORHWWTzRUN7c+5SSJ48e2DVTbJ+EvBT8dA4d9nNMZfejBZsL/170bJ2Befe6F9Lc5VmuhT8ggs1ljggwVQJXdFrtehFnSzBS+VgqooXZ4tvShhNTqtU49ZrC07JxwjsGXAD0/bIOb9G84KXxdUxV4M+34qccSHQNIKiDv84/6Fh+iv5qR64IWaQSaDFdqCvrD6d41N0jfqoZQrcxoHsUsAxp/LQ7zBM3n9WDsNoGqmaOE50RHAvQMaizt110c4FgdKbnZhwQpR3DiKlmyMVpIO4lxc81GSpT5PP970Q8aPcFVUoMYH7Mc4sjOlGv4N358TMsS+498uGzdhwuEUlJq7mxldnp3AfV1vwYVSKlnU=
