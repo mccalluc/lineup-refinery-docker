@@ -40,6 +40,7 @@ end docker_build
 
 
 start docker_run
+CONTAINER_NAME=$IMAGE-container
 $OPT_SUDO docker run --name $CONTAINER_NAME --detach --publish $PORT:80 $IMAGE
 retry
 echo "docker is responsive"
