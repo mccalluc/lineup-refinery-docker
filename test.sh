@@ -39,19 +39,19 @@ $OPT_SUDO docker build --cache-from $REPO --tag $IMAGE context
 end docker_build
 
 
+start docker_run
+$OPT_SUDO docker run --name $CONTAINER_NAME --detach --publish $PORT:80 $IMAGE
+retry
+echo "docker is responsive"
+docker stop $CONTAINER_NAME
+docker rm $CONTAINER_NAME
+echo "container cleaned up"
+end docker_run
+
+
 # TODO:
 #start cypress
 #START SERVER
 #node_modules/.bin/cypress run
 #kill `jobs -p`
 #end cypress
-
-# TODO:
-#start docker_run
-#$OPT_SUDO docker run --name $CONTAINER_NAME --detach --publish $PORT:80 $IMAGE
-#retry
-#echo "docker is responsive"
-#docker stop $CONTAINER_NAME
-#docker rm $CONTAINER_NAME
-#echo "container cleaned up"
-#end docker_run
