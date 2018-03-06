@@ -46,12 +46,12 @@ end docker_build
 #kill `jobs -p`
 #end cypress
 
-
-start docker_run
-$OPT_SUDO docker run --name $CONTAINER_NAME --detach --publish $PORT:80 $IMAGE
-retry
-echo "docker is responsive"
-docker stop $CONTAINER_NAME
-docker rm $CONTAINER_NAME
-echo "container cleaned up"
-end docker_run
+# TODO:
+#start docker_run
+#$OPT_SUDO docker run --name $CONTAINER_NAME --detach --publish $PORT:80 $IMAGE
+#retry
+#echo "docker is responsive"
+#docker stop $CONTAINER_NAME
+#docker rm $CONTAINER_NAME
+#echo "container cleaned up"
+#end docker_run
