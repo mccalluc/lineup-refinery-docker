@@ -3,6 +3,7 @@
 OWNER=mccalluc # TODO: gehlenborglab
 export IMAGE=lineup_refinery
 export REPO=$OWNER/$IMAGE
+export CONTAINER_NAME=$IMAGE-container
 
 # We don't want to run the whole script under sudo on Travis,
 # because then it gets the system python instead of the version
