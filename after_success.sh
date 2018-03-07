@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -o errexit
-source define_repo.sh
+source environment.sh
 tag_push() { echo "Tagging into $2"; sudo docker tag $1 $2; sudo docker push $2; }
 sudo docker login -u mccalluc -p $DOCKER_PASS
 tag_push ${IMAGE}_build ${REPO}_build

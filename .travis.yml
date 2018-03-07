@@ -2,24 +2,7 @@ sudo: required
 script:
 - "./test.sh"
 after_success:
-- set -o errexit
-- source define_repo.sh
-- tag_push() { echo "Tagging into $2"; sudo docker tag $1 $2; sudo docker push $2; }
-- sudo docker login -u mccalluc -p $DOCKER_PASS
-- tag_push $IMAGE $REPO
-- |
-  if [ "$TRAVIS_EVENT_TYPE" == "pull_request" ]; then
-    echo "PR!";
-    BRANCH=`echo ${TRAVIS_PULL_REQUEST_BRANCH:-$TRAVIS_BRANCH} | perl -pne 'chomp;s{.*/}{};s/\W/-/g'`;
-    tag_push $IMAGE $REPO:$BRANCH;
-    tag_push $IMAGE $REPO:latest-pr;
-  fi
-- |-
-  if [ ! -z "$TRAVIS_TAG" ]; then
-    echo "Git tag!";
-    tag_push $IMAGE $REPO:$TRAVIS_TAG;
-    tag_push $IMAGE $REPO:latest;
-  fi
+- "./after_success.sh"
 env:
   global:
     secure: x5zp9jh9zQTAnk58F8//BV1G5QJxJDDR8CarioaEW0iLQTKnOLZOuoD3fQFhFgeaV+8rod2C6rVUqKhHTwJIN0VT0HZnNK7VNZEIgYc4hR5BmyGCjFpPvEcGjbtwmjzPAYAOZM9B1hj1T1QIX/IMdvgJL0p+3ApzGc3c6iJRO7kxcBali7x/QN7ArZp0Qg/NPEuAqqzSuvm7KHtc4tbpMGQ5a3JUYLeZOEO6zPfESlF9QqbDNO7iVTht3OmPWYltz4+Yd/+5DzdtHInWholR+kdpbjkhnx60YbVtzoJ5hp7qna5H8WKwcbCWjjFdvwNkSwVC6hLT4wAIQ2AOwgW/ZOPiFRNUZPZo/VXRaVAXbIOHsby52hQM2YUp+YWUnjyYjEUK652pFr/OZlI20aG/TbXd0Ix8cVA+6nQY+UbMwN2zfqTafuuS39yjEvny0Dw4hcWxxlXzvjOjZ4slOBAw4o9L038mZGZeMs6smhl0XizGf9bB2rt/7vkpzDRcRUMFMA+sjV5tymwUcyNHn+gpyfAFJeqZ0eKPzA/gzSuHHXJ9CE7uuwkE71YmBxXA9B1Q/IcOGMPfXw07N9ahDEm2JPYn52ChO/dNv4V+IGFlcdVatciTxCaqYTQkd7UNp6TFwU+1IL4EM51dwUeNaSLeZe23R9L+TsNuHgV6vn8fwqk=

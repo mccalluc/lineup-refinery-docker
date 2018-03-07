@@ -19,31 +19,15 @@ retry() {
     echo 'Container responded with:'
     head -n50 /tmp/response.txt
 }
-PORT=8888
-
+source environment.sh
 
 start docker_build
-source define_repo.sh
-
-# We don't want to run the whole script under sudo on Travis,
-# because then it gets the system python instead of the version
-# we've specified.
-OPT_SUDO=''
-if [ ! -z "$TRAVIS" ]; then
-  OPT_SUDO='sudo'
-fi
-
-echo "REPO: $REPO"
-echo "IMAGE: $IMAGE"
-
-$OPT_SUDO docker pull $REPO
-$OPT_SUDO docker build --cache-from $REPO --tag $IMAGE context
+./docker_build.sh
 end docker_build
 
 
 start docker_run
-CONTAINER_NAME=$IMAGE-container
-$OPT_SUDO docker run --name $CONTAINER_NAME --detach --publish $PORT:80 $IMAGE
+./docker_run.sh
 retry
 echo "docker is responsive"
 docker stop $CONTAINER_NAME
