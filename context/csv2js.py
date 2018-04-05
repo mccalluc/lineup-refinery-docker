@@ -2,6 +2,7 @@ import requests
 import os
 import json
 import sys
+import urllib
 from csv import DictReader, Sniffer
 
 
@@ -21,7 +22,7 @@ def csvs_from_argv():
             data.append(f.read())
     return data
 
-def read_csvs(csvs):
+def read_csvs(csvs, primary_key):
     list_of_lists_of_dicts = [
         list(DictReader(csv.splitlines(), dialect=Sniffer().sniff(csv)))
         for csv in csvs]
@@ -31,13 +32,42 @@ def read_csvs(csvs):
     for s in key_sets:
         key_union.update(s)
 
+    rows = [d  for l_of_d in list_of_lists_of_dicts for d in l_of_d]
+    id_rows = [{**d, **{primary_key: i}} for (i, d) in enumerate(rows)]
     return {
         'header': sorted(key_union),
-        'rows': [d  for l_of_d in list_of_lists_of_dicts for d in l_of_d]
+        'rows': id_rows
     }
+
+def make_column_def(header):
+    return [{'column': col, 'type': 'string'} for col in header]
+
+def make_tsv(header, rows):
+    header_line = '\t'.join(header)
+    lines = [header_line]
+    for row in rows:
+        line = '\t'.join([row.get(h) or '' for h in header])
+        lines.append(line)
+    return '\n'.join(lines)
+
+def make_outside_data_js(data, primary_key):
+    column_def_json = json.dumps(make_column_def(data['header']))
+    tsv_encoded = urllib.parse.quote(make_tsv(data['header'], data['rows']))
+    return '''
+var outside_data = [
+  {{
+    id: "data",
+    name: "Data",
+    desc: {{ separator:"\\t", primaryKey:"{}", columns:{} }},
+    url: "data:text/plain;charset=utf-8,{}"
+  }}
+];
+'''.format(primary_key, column_def_json, tsv_encoded)
 
 if __name__ =="__main__":
     csvs = csvs_from_argv() if sys.argv[1:] else csvs_from_envvar()
-    data = read_csvs(csvs)
-    print(data)
+    primary_key = 'id'
+    data = read_csvs(csvs, primary_key)
+    js = make_outside_data_js(data, primary_key)
+    print(js)
 
