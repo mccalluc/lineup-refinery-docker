@@ -27,10 +27,17 @@ def read_csvs(csvs):
         for csv in csvs]
     key_sets = [list_of_dicts[0].keys()
                 for list_of_dicts in list_of_lists_of_dicts]
-    return key_sets
+    key_union = set()
+    for s in key_sets:
+        key_union.update(s)
+
+    return {
+        'header': sorted(key_union),
+        'rows': [d  for l_of_d in list_of_lists_of_dicts for d in l_of_d]
+    }
 
 if __name__ =="__main__":
     csvs = csvs_from_argv() if sys.argv[1:] else csvs_from_envvar()
-    union = read_csvs(csvs)
-    print(union)
+    data = read_csvs(csvs)
+    print(data)
 
