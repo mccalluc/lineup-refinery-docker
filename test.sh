@@ -22,6 +22,11 @@ retry() {
 source environment.sh
 
 
+start doctest
+python -m doctest context/*.py && echo 'doctests pass'
+end doctest
+
+
 start docker_build
 ./docker_build.sh
 end docker_build
@@ -31,20 +36,9 @@ start docker_run
 ./docker_run.sh
 retry
 echo "docker is responsive"
+diff fixtures/outside_data.js <(curl http://localhost:8888/outside_data.js) \
+|| die 'Did not find expected outside_data.js'
 docker stop $CONTAINER_NAME
 docker rm $CONTAINER_NAME
 echo "container cleaned up"
 end docker_run
-
-
-start doctest
-python -m doctest context/*.py && echo 'doctests pass'
-end doctest
-
-
-# TODO:
-#start cypress
-#START SERVER
-#node_modules/.bin/cypress run
-#kill `jobs -p`
-#end cypress

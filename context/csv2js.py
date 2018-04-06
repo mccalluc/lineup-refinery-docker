@@ -7,16 +7,16 @@ from csv import DictReader, Sniffer
 
 
 def csvs_from_envvar():
-    json = os.environ.get("INPUT_JSON")
-    if json is None:
+    input_json = os.environ.get("INPUT_JSON")
+    if input_json is None:
         url = os.environ.get("INPUT_JSON_URL")
         if url is None:
             # Even if there is an error, we need to express that in the
             # response, somehow, so the JS can present it to the user.
             return ['data\nmissing']
         else:
-            json = requests.get(url).text
-    config = json.loads(json)
+            input_json = requests.get(url).text
+    config = json.loads(input_json)
 
     return [requests.get(url).text for url in config["file_relationships"]]
 

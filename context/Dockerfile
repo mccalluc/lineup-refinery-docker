@@ -12,6 +12,4 @@ RUN python -m wget https://github.com/mccalluc/$REPO/archive/v$V.zip
 RUN unzip $REPO-$V.zip
 WORKDIR $REPO-$V
 
-RUN python ../csv2js.py > outside_data.js
-
-CMD "python" "-m" "http.server" "80"
+CMD "../on_startup.sh"
