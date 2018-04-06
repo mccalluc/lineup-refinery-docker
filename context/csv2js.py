@@ -23,6 +23,12 @@ def csvs_from_argv():
     return data
 
 def read_csvs(csvs, primary_key):
+    '''
+    >>> csv = 'a,c\\n1,2'
+    >>> tsv = 'a\\tb\\n3\\t4'
+    >>> read_csvs([csv, tsv], 'id')
+    {'header': ['a', 'b', 'c'], 'rows': [{'a': '1', 'c': '2', 'id': 0}, {'a': '3', 'b': '4', 'id': 1}]}
+    '''
     list_of_lists_of_dicts = [
         list(DictReader(csv.splitlines(), dialect=Sniffer().sniff(csv)))
         for csv in csvs]
@@ -44,6 +50,7 @@ def make_column_def(header):
     >>> make_column_def(['x', 'y'])
     [{'column': 'x', 'type': 'string'}, {'column': 'y', 'type': 'string'}]
     '''
+
     return [{'column': col, 'type': 'string'} for col in header]
 
 def make_tsv(header, rows):
@@ -58,6 +65,7 @@ def make_tsv(header, rows):
     >>> make_tsv(header, rows)
     'x\\ty\\n1\\t2'
     '''
+
     header_line = '\t'.join(header)
     lines = [header_line]
     for row in rows:
@@ -82,6 +90,7 @@ def make_outside_data_js(data, primary_key):
     ];
     <BLANKLINE>
     '''
+
     column_def_json = json.dumps(make_column_def(data['header']))
     tsv_encoded = urllib.parse.quote(make_tsv(data['header'], data['rows']))
     return '''
