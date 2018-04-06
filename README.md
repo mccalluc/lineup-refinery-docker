@@ -10,3 +10,10 @@ checkout this repo, and then:
 $ ./docker_build.sh
 $ ./docker_run.sh
 ```
+
+## Release
+
+Successful Github tags and PRs will prompt Travis to push the built image to Dockerhub. For a new version number:
+```
+$ git tag v0.0.x && git push origin --tags
+```
