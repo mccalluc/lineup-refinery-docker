@@ -36,7 +36,7 @@ start docker_run
 ./docker_run.sh
 retry
 echo "docker is responsive"
-diff fixtures/outside_data.js <(curl http://localhost:8888/outside_data.js) \
+diff fixtures/expected-outside_data.js <(curl http://localhost:8888/outside_data.js) \
 || die 'Did not find expected outside_data.js'
 docker stop $CONTAINER_NAME
 docker rm $CONTAINER_NAME
