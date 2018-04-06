@@ -40,9 +40,24 @@ def read_csvs(csvs, primary_key):
     }
 
 def make_column_def(header):
+    '''
+    >>> make_column_def(['x', 'y'])
+    [{'column': 'x', 'type': 'string'}, {'column': 'y', 'type': 'string'}]
+    '''
     return [{'column': col, 'type': 'string'} for col in header]
 
 def make_tsv(header, rows):
+    '''
+    >>> header = ['x', 'y']
+    >>> rows = [{'y': '2'}]
+    >>> make_tsv(header, rows)
+    'x\\ty\\n\\t2'
+
+    >>> header = ['x', 'y']
+    >>> rows = [{'x': '1', 'y': '2'}]
+    >>> make_tsv(header, rows)
+    'x\\ty\\n1\\t2'
+    '''
     header_line = '\t'.join(header)
     lines = [header_line]
     for row in rows:
@@ -51,6 +66,22 @@ def make_tsv(header, rows):
     return '\n'.join(lines)
 
 def make_outside_data_js(data, primary_key):
+    '''
+    >>> header = ['x']
+    >>> rows = [{'x': '1'}]
+    >>> data = {'header': header, 'rows': rows}
+    >>> print(make_outside_data_js(data, 'x'))
+    <BLANKLINE>
+    var outside_data = [
+      {
+        id: "data",
+        name: "Data",
+        desc: { separator:"\\t", primaryKey:"x", columns:[{"column": "x", "type": "string"}] },
+        url: "data:text/plain;charset=utf-8,x%0A1"
+      }
+    ];
+    <BLANKLINE>
+    '''
     column_def_json = json.dumps(make_column_def(data['header']))
     tsv_encoded = urllib.parse.quote(make_tsv(data['header'], data['rows']))
     return '''

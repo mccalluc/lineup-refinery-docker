@@ -21,6 +21,7 @@ retry() {
 }
 source environment.sh
 
+
 start docker_build
 ./docker_build.sh
 end docker_build
@@ -34,6 +35,11 @@ docker stop $CONTAINER_NAME
 docker rm $CONTAINER_NAME
 echo "container cleaned up"
 end docker_run
+
+
+start doctest
+python -m doctest context/*.py && echo 'doctests pass'
+end doctest
 
 
 # TODO:
