@@ -1,2 +1,2 @@
-wget
-requests
+wget==3.2
+requests==2.18.4

@@ -12,7 +12,6 @@ RUN python -m wget https://github.com/mccalluc/$REPO/archive/v$V.zip
 RUN unzip $REPO-$V.zip
 WORKDIR $REPO-$V
 
-# TODO: Remove ../fake.* and it should read envvars.
-RUN python ../csv2js.py ../fake.* > outside_data.js
+RUN python ../csv2js.py > outside_data.js
 
 CMD "python" "-m" "http.server" "80"

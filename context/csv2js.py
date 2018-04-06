@@ -29,6 +29,7 @@ def read_csvs(csvs, primary_key):
     >>> read_csvs([csv, tsv], 'id')
     {'header': ['a', 'b', 'c'], 'rows': [{'a': '1', 'c': '2', 'id': 0}, {'a': '3', 'b': '4', 'id': 1}]}
     '''
+
     list_of_lists_of_dicts = [
         list(DictReader(csv.splitlines(), dialect=Sniffer().sniff(csv)))
         for csv in csvs]
