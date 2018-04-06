@@ -27,6 +27,11 @@ python -m doctest context/*.py && echo 'doctests pass'
 end doctest
 
 
+start format
+flake8 context || die "Run 'autopep8 --in-place -r context'"
+end format
+
+
 start docker_build
 ./docker_build.sh
 end docker_build
