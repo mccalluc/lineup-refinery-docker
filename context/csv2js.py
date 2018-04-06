@@ -10,7 +10,12 @@ def csvs_from_envvar():
     json = os.environ.get("INPUT_JSON")
     if json is None:
         url = os.environ.get("INPUT_JSON_URL")
-        json = requests.get(url).text
+        if url is None:
+            # Even if there is an error, we need to express that in the
+            # response, somehow, so the JS can present it to the user.
+            return ['data\nmissing']
+        else:
+            json = requests.get(url).text
     config = json.loads(json)
 
     return [requests.get(url).text for url in config["file_relationships"]]
@@ -24,15 +29,28 @@ def csvs_from_argv():
 
 def read_csvs(csvs, primary_key):
     '''
+    Normal:
     >>> csv = 'a,c\\n1,2'
     >>> tsv = 'a\\tb\\n3\\t4'
     >>> read_csvs([csv, tsv], 'id')
     {'header': ['a', 'b', 'c'], 'rows': [{'a': '1', 'c': '2', 'id': 0}, {'a': '3', 'b': '4', 'id': 1}]}
+
+    Single column:
+    >>> csv = 'a\\n1\\n2'
+    >>> read_csvs([csv], 'id')
+    {'header': ['a'], 'rows': [{'a': '1', 'id': 0}, {'a': '2', 'id': 1}]}
     '''
 
-    list_of_lists_of_dicts = [
-        list(DictReader(csv.splitlines(), dialect=Sniffer().sniff(csv)))
-        for csv in csvs]
+    list_of_lists_of_dicts = []
+    for csv in csvs:
+        try:
+            list_of_dicts = list(
+                DictReader(csv.splitlines(), dialect=Sniffer().sniff(csv)))
+        except:
+            lines = csv.splitlines()
+            key = lines[0]
+            list_of_dicts = [{key: line} for line in lines[1:]]
+        list_of_lists_of_dicts.append(list_of_dicts)
     key_sets = [list_of_dicts[0].keys()
                 for list_of_dicts in list_of_lists_of_dicts]
     key_union = set()
@@ -56,15 +74,17 @@ def make_column_def(header):
 
 def make_tsv(header, rows):
     '''
-    >>> header = ['x', 'y']
-    >>> rows = [{'y': '2'}]
-    >>> make_tsv(header, rows)
-    'x\\ty\\n\\t2'
-
+    Normal:
     >>> header = ['x', 'y']
     >>> rows = [{'x': '1', 'y': '2'}]
     >>> make_tsv(header, rows)
     'x\\ty\\n1\\t2'
+
+    Handles missing columns:
+    >>> header = ['x', 'y']
+    >>> rows = [{'y': '2'}]
+    >>> make_tsv(header, rows)
+    'x\\ty\\n\\t2'
     '''
 
     header_line = '\t'.join(header)
