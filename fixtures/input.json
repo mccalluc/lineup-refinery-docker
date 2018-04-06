@@ -1,0 +1,6 @@
+{
+  "file_relationships": [
+    "https://raw.githubusercontent.com/refinery-platform/lineup-refinery-docker/v0.0.4/fixtures/fake.csv",
+    "https://raw.githubusercontent.com/refinery-platform/lineup-refinery-docker/v0.0.4/fixtures/fake.tsv"
+  ]
+}
