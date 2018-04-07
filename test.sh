@@ -27,6 +27,11 @@ python -m doctest context/*.py && echo 'doctests pass'
 end doctest
 
 
+start format
+flake8 context || die "Run 'autopep8 --in-place -r context'"
+end format
+
+
 start docker_build
 ./docker_build.sh
 end docker_build
@@ -36,7 +41,7 @@ start docker_run
 ./docker_run.sh
 retry
 echo "docker is responsive"
-diff fixtures/outside_data.js <(curl http://localhost:8888/outside_data.js) \
+diff fixtures/expected-outside_data.js <(curl http://localhost:8888/outside_data.js) \
 || die 'Did not find expected outside_data.js'
 docker stop $CONTAINER_NAME
 docker rm $CONTAINER_NAME
