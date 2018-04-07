@@ -1,5 +1,6 @@
 sudo: required
 script:
+- "pip install -r requirements-dev.txt"
 - "./test.sh"
 after_success:
 - "./after_success.sh"
