@@ -70,13 +70,52 @@ def read_csvs(csvs, primary_key):
     }
 
 
-def make_column_def(header):
+def get_column(column, list_of_dicts):
     '''
-    >>> make_column_def(['x', 'y'])
-    [{'column': 'x', 'type': 'string'}, {'column': 'y', 'type': 'string'}]
+    >>> get_column('a', [{'a':1}, {'b':2}])
+    [1, None]
     '''
+    return [d.get(column) for d in list_of_dicts]
 
-    return [{'column': col, 'type': 'string'} for col in header]
+
+def all_numbers(l):
+    '''
+    >>> all_numbers(['1','one'])
+    False
+    >>> all_numbers(['-1.1e-1'])
+    True
+    >>> all_numbers([])
+    True
+    '''
+    return all([is_number(x) for x in l if x is not None])
+
+
+def is_number(s):
+    '''
+    >>> is_number('1')
+    True
+    >>> is_number('z')
+    False
+    '''
+    if s is None:
+        return None
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+
+def make_column_def(header, rows):
+    '''
+    >>> make_column_def(['x', 'y'], [{'x': '1'}, {'y': 'one'}])
+    [{'column': 'x', 'type': 'number'}, {'column': 'y', 'type': 'string'}]
+    '''
+    column_def = []
+    for col in header:
+        col_type = 'number' if all_numbers(get_column(col, rows)) else 'string'
+        column_def.append({'column': col, 'type': col_type})
+    return column_def
 
 
 def make_tsv(header, rows):
@@ -113,14 +152,14 @@ def make_outside_data_js(data, primary_key):
       {
         id: "data",
         name: "Data",
-        desc: { separator:"\\t", primaryKey:"x", columns:[{"column": "x", "type": "string"}] },
+        desc: { separator:"\\t", primaryKey:"x", columns:[{"column": "x", "type": "number"}] },
         url: "data:text/plain;charset=utf-8,x%0A1"
       }
     ];
     <BLANKLINE>
     '''  # noqa: E501
 
-    column_def_json = json.dumps(make_column_def(data['header']))
+    column_def_json = json.dumps(make_column_def(data['header'], data['rows']))
     tsv_encoded = urllib.parse.quote(make_tsv(data['header'], data['rows']))
     return '''
 var outside_data = [
