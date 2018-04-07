@@ -1,4 +1,8 @@
-sudo: required
+sudo: required  # required for Docker
+language: python
+python:
+- 3.6.0
+
 script:
 - "pip install -r requirements-dev.txt"
 - "./test.sh"
