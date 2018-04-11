@@ -145,7 +145,7 @@ def make_column_defs(header, rows):
     {'column': 'string', 'type': 'string'}
     >>> col_def[3]
     {'column': 'missing', 'type': 'string'}
-    '''
+    '''  # noqa
     col_defs = []
     for col in header:
         col_def = {'column': col}
@@ -206,8 +206,10 @@ def make_outside_data_js(data, primary_key):
     <BLANKLINE>
     '''  # noqa: E501
 
-    column_def_json = json.dumps(make_column_defs(data['header'], data['rows']))
-    tsv_encoded = urllib.parse.quote(make_tsv(data['header'], data['rows']))
+    column_def_json = json.dumps(
+        make_column_defs(data['header'], data['rows']))
+    tsv_encoded = urllib.parse.quote(
+        make_tsv(data['header'], data['rows']))
     return '''
 var outside_data = [
   {{
