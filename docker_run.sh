@@ -22,8 +22,6 @@ else
         VOLS="$VOLS --volume $ABSOLUTE_PATH:$IN_CONTAINER_PATH"
         IN_CONTAINER_ARGS="$IN_CONTAINER_ARGS $IN_CONTAINER_PATH"
     done
-    echo "$VOLS"
-    echo "$IN_CONTAINER_ARGS"
     $OPT_SUDO docker run \
       --name $CONTAINER_NAME \
       --detach \
