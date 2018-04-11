@@ -76,60 +76,87 @@ def read_csvs(csvs, primary_key):
     }
 
 
-def get_column(column, list_of_dicts):
+def get_raw_column(column, list_of_dicts):
     '''
-    >>> get_column('a', [{'a':1}, {'b':2}])
-    [1, None]
+    >>> get_raw_column('a', [{'a':'1'}])
+    ['1']
     '''
-    return [d.get(column) for d in list_of_dicts]
+    includes_nones = [d.get(column) for d in list_of_dicts]
+    return [val for val in includes_nones if val is not None]
+
+
+def get_typed_column(column, list_of_dicts):
+    '''
+    >>> get_typed_column('a', [{'a':'1'}])
+    [1]
+    >>> get_typed_column('a', [{'a':'1.1'}])
+    [1.1]
+    '''
+    return [typed(s) for s in get_raw_column(column, list_of_dicts)]
 
 
 def all_numbers(l):
     '''
-    >>> all_numbers(['1','one'])
+    >>> all_numbers([1, 'one'])
     False
-    >>> all_numbers(['-1.1e-1'])
+    >>> all_numbers([-1.1e-1])
     True
     >>> all_numbers([])
     True
     '''
-    return all([is_number(x) for x in l if x is not None])
+    return all([type(x) in [float, int] for x in l])
 
 
-def is_number(s):
+def typed(s):
     '''
-    >>> is_number('1')
-    True
-    >>> is_number('z')
-    False
+    >>> typed('1.1')
+    1.1
+    >>> typed('0')
+    0
+    >>> typed('z')
+    'z'
     '''
-    if s is None:
-        return None
+    assert type(s) in [str]
     try:
-        float(s)
-        return True
+        return int(s)
+    except TypeError:  # None
+        return None
     except ValueError:
-        return False
+        try:
+            return float(s)
+        except ValueError:
+            return s
 
 
-def make_column_def(header, rows):
+def make_column_defs(header, rows):
     '''
-    >>> col_def = make_column_def(
-    ...     ['x', 'y'],
+    >>> col_def = make_column_defs(
+    ...     ['int', 'float', 'string', 'missing'],
     ...     [
-    ...         {'x': '1', 'y': 'one'},
-    ...         {'x': '2'}
+    ...         {'int': '10', 'float': '10.1', 'string': 'ten', 'missing': 'x'},
+    ...         {'int': '2', 'float': '2.1', 'string': 'two'}
     ...     ])
     >>> col_def[0]
-    {'column': 'x', 'type': 'number'}
+    {'column': 'int', 'type': 'number', 'domain': [2, 10], 'numberFormat': '.1f'}
     >>> col_def[1]
-    {'column': 'y', 'type': 'string'}
+    {'column': 'float', 'type': 'number', 'domain': [2.1, 10.1], 'numberFormat': '.1f'}
+    >>> col_def[2]
+    {'column': 'string', 'type': 'string'}
+    >>> col_def[3]
+    {'column': 'missing', 'type': 'string'}
     '''
-    column_def = []
+    col_defs = []
     for col in header:
-        col_type = 'number' if all_numbers(get_column(col, rows)) else 'string'
-        column_def.append({'column': col, 'type': col_type})
-    return column_def
+        col_def = {'column': col}
+        values = get_typed_column(col, rows)
+        if all_numbers(values):
+            col_def['type'] = 'number'
+            col_def['domain'] = [min(values), max(values)]
+            col_def['numberFormat'] = '.1f'
+        else:
+            col_def['type'] = 'string'
+        col_defs.append(col_def)
+    return col_defs
 
 
 def make_tsv(header, rows):
@@ -166,14 +193,14 @@ def make_outside_data_js(data, primary_key):
       {
         id: "data",
         name: "Data",
-        desc: { separator:"\\t", primaryKey:"x", columns:[{"column": "x", "type": "number"}] },
+        desc: { separator:"\\t", primaryKey:"x", columns:[{"column": "x", "type": "number", "domain": [1, 1], "numberFormat": ".1f"}] },
         url: "data:text/plain;charset=utf-8,x%0A1"
       }
     ];
     <BLANKLINE>
     '''  # noqa: E501
 
-    column_def_json = json.dumps(make_column_def(data['header'], data['rows']))
+    column_def_json = json.dumps(make_column_defs(data['header'], data['rows']))
     tsv_encoded = urllib.parse.quote(make_tsv(data['header'], data['rows']))
     return '''
 var outside_data = [
