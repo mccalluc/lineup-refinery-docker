@@ -6,18 +6,24 @@ import urllib
 from csv import DictReader, Sniffer
 
 
-def csvs_from_envvar():
-    input_json = os.environ.get("INPUT_JSON")
-    if input_json is None:
-        input_json_url = os.environ.get("INPUT_JSON_URL")
-        if input_json_url is None:
-            # Even if there is an error, we need to express that in the
-            # response, somehow, so the JS can present it to the user.
-            return ['data\nmissing']
-        else:
-            input_json = requests.get(input_json_url).text
-    config = json.loads(input_json)
+def csvs_from_env():
+    input_json_envvar = os.environ.get("INPUT_JSON")
+    input_json_url_envvar = os.environ.get("INPUT_JSON_URL")
+    input_json_path = '/var/input.json'
 
+    if input_json_envvar:
+        input_json = input_json_envvar
+    elif input_json_url_envvar:
+        input_json = requests.get(input_json_url_envvar).text
+    elif os.path.isfile(input_json_path):
+        with open(input_json_path) as f:
+            input_json = f.read()
+    else:
+        # Even if there is an error, we need to express that in the
+        # response, somehow, so the JS can present it to the user.
+        return ['data\nmissing']
+
+    config = json.loads(input_json)
     return [requests.get(url).text for url in config["file_relationships"]]
 
 
@@ -174,7 +180,7 @@ var outside_data = [
 
 
 if __name__ == '__main__':
-    csvs = csvs_from_argv() if sys.argv[1:] else csvs_from_envvar()
+    csvs = csvs_from_argv() if sys.argv[1:] else csvs_from_env()
     primary_key = 'id'
     data = read_csvs(csvs, primary_key)
     js = make_outside_data_js(data, primary_key)
