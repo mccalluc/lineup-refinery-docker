@@ -93,18 +93,19 @@ def get_typed_column(column, list_of_dicts):
     [1.1]
     '''
     return [typed(s) for s in get_raw_column(column, list_of_dicts)]
+    # TODO: could this be a generator?
 
 
-def all_numbers(l):
+def all_type(l, t):
     '''
-    >>> all_numbers([1, 'one'])
+    >>> all_type([1, 'one'], int)
     False
-    >>> all_numbers([-1.1e-1])
+    >>> all_type([-1.1e-1], float)
     True
-    >>> all_numbers([])
+    >>> all_type([], int)
     True
     '''
-    return all([type(x) in [float, int] for x in l])
+    return all(type(x) == t for x in l)
 
 
 def typed(s):
@@ -137,7 +138,7 @@ def make_column_defs(header, rows):
     ...         {'int': '2', 'float': '2.1', 'string': 'two'}
     ...     ])
     >>> col_def[0]
-    {'column': 'int', 'type': 'number', 'domain': [2, 10], 'numberFormat': '.1f'}
+    {'column': 'int', 'type': 'number', 'domain': [2, 10], 'numberFormat': 'd'}
     >>> col_def[1]
     {'column': 'float', 'type': 'number', 'domain': [2.1, 10.1], 'numberFormat': '.1f'}
     >>> col_def[2]
@@ -149,10 +150,15 @@ def make_column_defs(header, rows):
     for col in header:
         col_def = {'column': col}
         values = get_typed_column(col, rows)
-        if all_numbers(values):
+        if all_type(values, int):
             col_def['type'] = 'number'
             col_def['domain'] = [min(values), max(values)]
-            col_def['numberFormat'] = '.1f'
+            col_def['numberFormat'] = 'd'  # TODO: confirm this is valid
+        elif all_type(values, float):
+            col_def['type'] = 'number'
+            col_def['domain'] = [min(values), max(values)]
+            col_def['numberFormat'] = '.1f'  # TODO: guess decimal points
+        # TODO: Guess categorical strings?
         else:
             col_def['type'] = 'string'
         col_defs.append(col_def)
@@ -193,7 +199,7 @@ def make_outside_data_js(data, primary_key):
       {
         id: "data",
         name: "Data",
-        desc: { separator:"\\t", primaryKey:"x", columns:[{"column": "x", "type": "number", "domain": [1, 1], "numberFormat": ".1f"}] },
+        desc: { separator:"\\t", primaryKey:"x", columns:[{"column": "x", "type": "number", "domain": [1, 1], "numberFormat": "d"}] },
         url: "data:text/plain;charset=utf-8,x%0A1"
       }
     ];
