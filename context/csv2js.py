@@ -114,8 +114,16 @@ def is_number(s):
 
 def make_column_def(header, rows):
     '''
-    >>> make_column_def(['x', 'y'], [{'x': '1'}, {'y': 'one'}])
-    [{'column': 'x', 'type': 'number'}, {'column': 'y', 'type': 'string'}]
+    >>> col_def = make_column_def(
+    ...     ['x', 'y'],
+    ...     [
+    ...         {'x': '1', 'y': 'one'},
+    ...         {'x': '2'}
+    ...     ])
+    >>> col_def[0]
+    {'column': 'x', 'type': 'number'}
+    >>> col_def[1]
+    {'column': 'y', 'type': 'string'}
     '''
     column_def = []
     for col in header:
