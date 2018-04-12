@@ -118,7 +118,7 @@ def typed(s):
     >>> typed('z')
     'z'
     '''
-    assert type(s) in [str]
+    assert type(s) == str
     try:
         return int(s)
     except TypeError:  # None

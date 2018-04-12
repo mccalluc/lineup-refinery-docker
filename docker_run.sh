@@ -3,13 +3,11 @@ set -o errexit
 
 source environment.sh
 
+DEFAULTS="--name $CONTAINER_NAME --detach --publish $PORT:80 $IMAGE"
+
 if [ -z "$@" ]; then
-    $OPT_SUDO docker run \
-      --name $CONTAINER_NAME \
-      --detach \
-      --publish $PORT:80 \
-      --env INPUT_JSON="$(cat fixtures/fake-input.json)" \
-      $IMAGE
+    JSON=`cat fixtures/fake-input.json`
+    $OPT_SUDO docker run --env INPUT_JSON="$JSON" $DEFAULTS
 else
     echo "Will mount command line arguments: $@"
     VOLS=''
@@ -22,11 +20,6 @@ else
         VOLS="$VOLS --volume $ABSOLUTE_PATH:$IN_CONTAINER_PATH"
         IN_CONTAINER_ARGS="$IN_CONTAINER_ARGS $IN_CONTAINER_PATH"
     done
-    $OPT_SUDO docker run \
-      --name $CONTAINER_NAME \
-      --detach \
-      --publish $PORT:80 \
-      $VOLS \
-      $IMAGE ../on_startup.sh $IN_CONTAINER_ARGS
+    $OPT_SUDO docker run $VOLS $DEFAULTS ../on_startup.sh $IN_CONTAINER_ARGS
 fi
 echo "Visit http://localhost:$PORT"

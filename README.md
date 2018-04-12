@@ -7,7 +7,7 @@ docker run \
       --detach \
       --publish 8888:80 \
       --volume /my/local/data.csv:/tmp/1.csv \
-      mccalluc/lineup_refinery
+      mccalluc/lineup_refinery \
       ../on_startup.sh /tmp/1.csv
 ``
 
