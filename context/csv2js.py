@@ -4,6 +4,7 @@ import json
 import sys
 import urllib
 from csv import DictReader, Sniffer
+import re
 
 
 def csvs_from_env():
@@ -194,32 +195,38 @@ def make_outside_data_js(data, primary_key):
     >>> rows = [{'x': '1'}]
     >>> data = {'header': header, 'rows': rows}
     >>> print(make_outside_data_js(data, 'x'))
-    <BLANKLINE>
-    var outside_data = [
-      {
-        id: "data",
-        name: "Data",
-        desc: { separator:"\\t", primaryKey:"x", columns:[{"column": "x", "type": "number", "domain": [1, 1], "numberFormat": "d"}] },
-        url: "data:text/plain;charset=utf-8,x%0A1"
-      }
-    ];
-    <BLANKLINE>
-    '''  # noqa: E501
+    var outside_data = [ {
+        "desc": {
+          "columns": [ {
+              "column": "x",
+              "domain": [ 1, 1 ],
+              "numberFormat": "d",
+              "type": "number" } ],
+          "primaryKey": "x",
+          "separator": "\\t" },
+        "id": "data",
+        "name": "Data",
+        "url": "data:text/plain;charset=utf-8,x%0A1" } ];
+    '''
 
-    column_def_json = json.dumps(
-        make_column_defs(data['header'], data['rows']))
+    column_defs = make_column_defs(data['header'], data['rows'])
     tsv_encoded = urllib.parse.quote(
         make_tsv(data['header'], data['rows']))
-    return '''
-var outside_data = [
-  {{
-    id: "data",
-    name: "Data",
-    desc: {{ separator:"\\t", primaryKey:"{}", columns:{} }},
-    url: "data:text/plain;charset=utf-8,{}"
-  }}
-];
-'''.format(primary_key, column_def_json, tsv_encoded)
+    outside_data = [{
+        'id': 'data',
+        'name': 'Data',
+        'desc': {
+            'separator': '\t',
+            'primaryKey': primary_key,
+            'columns': column_defs},
+        'url': 'data:text/plain;charset=utf-8,{}'.format(tsv_encoded)
+    }]
+    outside_data_json = json.dumps(outside_data,
+                        ensure_ascii=True, sort_keys=True, indent=2)
+    outside_data_json_compressed = \
+        re.sub(r'\s+(?=\S)(?!")', ' ', outside_data_json)
+        # Compress each line which does not being with '"'.
+    return 'var outside_data = {};'.format(outside_data_json_compressed)
 
 
 if __name__ == '__main__':
