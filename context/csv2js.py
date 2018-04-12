@@ -195,9 +195,11 @@ def make_outside_data_js(data, primary_key):
     >>> rows = [{'x': '1'}]
     >>> data = {'header': header, 'rows': rows}
     >>> print(make_outside_data_js(data, 'x'))
-    var outside_data = [ {
+    var outside_data = [
+      {
         "desc": {
-          "columns": [ {
+          "columns": [
+            {
               "column": "x",
               "domain": [ 1, 1 ],
               "numberFormat": "d",
@@ -222,10 +224,10 @@ def make_outside_data_js(data, primary_key):
         'url': 'data:text/plain;charset=utf-8,{}'.format(tsv_encoded)
     }]
     outside_data_json = json.dumps(outside_data,
-                        ensure_ascii=True, sort_keys=True, indent=2)
+                                   ensure_ascii=True, sort_keys=True, indent=2)
     outside_data_json_compressed = \
-        re.sub(r'\s+(?=\S)(?!")', ' ', outside_data_json)
-        # Compress each line which does not being with '"'.
+        re.sub(r'\s+(?=\S)(?!["{])', ' ', outside_data_json)
+    # Compress each line which does not being with '"' or '{'.
     return 'var outside_data = {};'.format(outside_data_json_compressed)
 
 
