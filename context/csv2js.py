@@ -37,7 +37,10 @@ def csvs_from_argv():
 
 class Tabular():
 
-    def __init__(self, csvs):
+    def __init__(self, csvs=None,
+                 # header and rows kwargs are just for making
+                 # unit tests more clear.
+                 header=None, rows=None):
         '''
         >>> csv = 'a,c\\n1,2'
         >>> tsv = 'a\\tb\\n3\\t4'
@@ -55,6 +58,10 @@ class Tabular():
         >>> tabular.rows
         [{'a': '1', 'id': 0}, {'a': '2', 'id': 1}]
         '''
+        if csvs is None:
+            self.header = header
+            self.rows = rows
+            return
         primary_key = 'id'
         list_of_lists_of_dicts = []
         for csv in csvs:
@@ -98,9 +105,8 @@ class Tabular():
             "url": "data:text/plain;charset=utf-8,a%0A1" } ];
         '''
 
-        column_defs = make_column_defs(self.header, self.rows)
-        tsv_encoded = urllib.parse.quote(
-            make_tsv(self.header, self.rows))
+        column_defs = self._make_column_defs()
+        tsv_encoded = urllib.parse.quote(self._make_tsv())
         outside_data = [{
             'id': 'data',
             'name': 'Data',
@@ -117,6 +123,67 @@ class Tabular():
             re.sub(r'\s+(?=\S)(?!["{])', ' ', outside_data_json)
         # Compress each line which does not being with '"' or '{'.
         return 'var outside_data = {};'.format(outside_data_json_compressed)
+
+    def _make_column_defs(self):
+        '''
+        >>> tab = Tabular(
+        ...    header=['int', 'float', 'string', 'missing'],
+        ...    rows=[
+        ...         {'int': '10', 'float': '10.1', 'string': 'ten', 'missing': 'x'},
+        ...         {'int': '2', 'float': '2.1', 'string': 'two'}
+        ...     ])
+        >>> col_def = tab._make_column_defs()
+        >>> col_def[0]
+        {'column': 'int', 'type': 'number', 'domain': [2, 10], 'numberFormat': 'd'}
+        >>> col_def[1]
+        {'column': 'float', 'type': 'number', 'domain': [2.1, 10.1], 'numberFormat': '.1f'}
+        >>> col_def[2]
+        {'column': 'string', 'type': 'string'}
+        >>> col_def[3]
+        {'column': 'missing', 'type': 'string'}
+        '''  # noqa
+        col_defs = []
+        for col in self.header:
+            col_def = {'column': col}
+            values = get_typed_column(col, self.rows)
+            if all_type(values, int):
+                col_def['type'] = 'number'
+                col_def['domain'] = [min(values), max(values)]
+                col_def['numberFormat'] = 'd'  # TODO: confirm this is valid
+            elif all_type(values, float):
+                col_def['type'] = 'number'
+                col_def['domain'] = [min(values), max(values)]
+                col_def['numberFormat'] = '.1f'  # TODO: guess decimal points
+            # TODO: Guess categorical strings?
+            else:
+                col_def['type'] = 'string'
+            col_defs.append(col_def)
+        return col_defs
+
+    def _make_tsv(self):
+        '''
+        Normal:
+        >>> tab = Tabular(
+        ...    header=['x', 'y'],
+        ...    rows=[{'x': '1', 'y': '2'}])
+        >>> tab._make_tsv()
+        'x\\ty\\n1\\t2'
+
+        Handles missing columns:
+        >>> tab = Tabular(
+        ...    header=['x', 'y'],
+        ...    rows=[{'y': '2'}])
+        >>> tab._make_tsv()
+        'x\\ty\\n\\t2'
+        '''
+
+        header_line = '\t'.join(self.header)
+        lines = [header_line]
+        for row in self.rows:
+            line = '\t'.join([row.get(h) or '' for h in self.header])
+            lines.append(line)
+        return '\n'.join(lines)
+
 
 def get_raw_column(column, list_of_dicts):
     '''
@@ -171,71 +238,7 @@ def typed(s):
             return s
 
 
-def make_column_defs(header, rows):
-    '''
-    >>> col_def = make_column_defs(
-    ...     ['int', 'float', 'string', 'missing'],
-    ...     [
-    ...         {'int': '10', 'float': '10.1', 'string': 'ten', 'missing': 'x'},
-    ...         {'int': '2', 'float': '2.1', 'string': 'two'}
-    ...     ])
-    >>> col_def[0]
-    {'column': 'int', 'type': 'number', 'domain': [2, 10], 'numberFormat': 'd'}
-    >>> col_def[1]
-    {'column': 'float', 'type': 'number', 'domain': [2.1, 10.1], 'numberFormat': '.1f'}
-    >>> col_def[2]
-    {'column': 'string', 'type': 'string'}
-    >>> col_def[3]
-    {'column': 'missing', 'type': 'string'}
-    '''  # noqa
-    col_defs = []
-    for col in header:
-        col_def = {'column': col}
-        values = get_typed_column(col, rows)
-        if all_type(values, int):
-            col_def['type'] = 'number'
-            col_def['domain'] = [min(values), max(values)]
-            col_def['numberFormat'] = 'd'  # TODO: confirm this is valid
-        elif all_type(values, float):
-            col_def['type'] = 'number'
-            col_def['domain'] = [min(values), max(values)]
-            col_def['numberFormat'] = '.1f'  # TODO: guess decimal points
-        # TODO: Guess categorical strings?
-        else:
-            col_def['type'] = 'string'
-        col_defs.append(col_def)
-    return col_defs
-
-
-def make_tsv(header, rows):
-    '''
-    Normal:
-    >>> header = ['x', 'y']
-    >>> rows = [{'x': '1', 'y': '2'}]
-    >>> make_tsv(header, rows)
-    'x\\ty\\n1\\t2'
-
-    Handles missing columns:
-    >>> header = ['x', 'y']
-    >>> rows = [{'y': '2'}]
-    >>> make_tsv(header, rows)
-    'x\\ty\\n\\t2'
-    '''
-
-    header_line = '\t'.join(header)
-    lines = [header_line]
-    for row in rows:
-        line = '\t'.join([row.get(h) or '' for h in header])
-        lines.append(line)
-    return '\n'.join(lines)
-
-
-
-
-
 if __name__ == '__main__':
     csvs = csvs_from_argv() if sys.argv[1:] else csvs_from_env()
-    primary_key = 'id'
-    data = read_csvs(csvs, primary_key)
-    js = make_outside_data_js(data, primary_key)
-    print(js)
+    tab = Tabular(csvs)
+    print(tab.make_outside_data_js())
