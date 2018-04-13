@@ -211,8 +211,6 @@ class Tabular():
 def is_categorical(values):
     '''
     Smaller sets can have proportionally more diversity than larger sets.
-    TODO: We don't need to read the whole long list: Figure out how many it
-    is allowed, and then read a subset.
 
     >>> is_categorical([1,1,2,2])
     False
@@ -223,8 +221,16 @@ def is_categorical(values):
     False
     >>> is_categorical([1,1,2,2,3,3,3,3,3])
     True
+
+    >>> is_categorical(range(100))
+    False
+    >>> is_categorical(['x' for i in range(100)] + list(range(100)))
+    True
+
+    It gets confused if a lot of uniform data leads the list...
+    Might be premature optimization?
     '''
-    return len(set(values)) < log2(len(values))
+    return len(set(values[:100])) < log2(len(values))
 
 
 def get_raw_column(column, list_of_dicts):
