@@ -36,6 +36,8 @@ def csvs_from_argv():
     return data
 
 
+PRIMARY_KEY = 'id'
+
 class Tabular():
 
     def __init__(self, csvs=None,
@@ -77,7 +79,6 @@ class Tabular():
             self.header = header
             self.rows = rows
             return
-        primary_key = 'id'
         list_of_lists_of_dicts = []
         for csv in csvs:
             try:
@@ -99,7 +100,7 @@ class Tabular():
 
 
         rows = [d for l_of_d in list_of_lists_of_dicts for d in l_of_d]
-        id_rows = [{**d, **{primary_key: i}} for (i, d) in enumerate(rows)]
+        id_rows = [{**d, **{PRIMARY_KEY: i}} for (i, d) in enumerate(rows)]
         self.rows = id_rows
 
     def make_outside_data_js(self):
@@ -130,7 +131,7 @@ class Tabular():
             'name': 'Data',
             'desc': {
                 'separator': '\t',
-                'primaryKey': 'id',
+                'primaryKey': PRIMARY_KEY,
                 'columns': column_defs},
             'url': 'data:text/plain;charset=utf-8,{}'.format(tsv_encoded)
         }]
