@@ -3,8 +3,9 @@ import os
 import json
 import sys
 import urllib
-from csv import DictReader, Sniffer
+from csv import DictReader, Sniffer, Error
 import re
+from math import log2
 
 
 def csvs_from_env():
@@ -36,6 +37,9 @@ def csvs_from_argv():
     return data
 
 
+PRIMARY_KEY = 'id'
+
+
 class Tabular():
 
     def __init__(self, csvs=None,
@@ -43,46 +47,63 @@ class Tabular():
                  # unit tests more clear.
                  header=None, rows=None):
         '''
-        >>> csv = 'a,c\\n1,2'
-        >>> tsv = 'a\\tb\\n3\\t4'
+        Preserve order:
+        >>> csv = 'q,u,i,c,k,b,r,o,w,n\\n1,2,3,4,5,6,7,8,9,10'
+        >>> tabular = Tabular([csv])
+        >>> ''.join(tabular.header)
+        'quickbrown'
+
+        # TODO:
+        # Preserve order with sparse data:
+        # >>> csv = 'q,u,i,c,k,b,r,o,w,n\\n,,,,X\\n,,Y'
+        # >>> tabular = Tabular([csv])
+        # >>> ''.join(tabular.header)
+        # 'quickbrown'
+
+        Merge files:
+        >>> csv = 'z,c\\n1,2'
+        >>> tsv = 'z\\tb\\n3\\t4'
         >>> tabular = Tabular([csv, tsv])
         >>> tabular.header
-        ['a', 'b', 'c']
+        ['z', 'c', 'b']
         >>> tabular.rows
-        [{'a': '1', 'c': '2', 'id': 0}, {'a': '3', 'b': '4', 'id': 1}]
+        [{'z': '1', 'c': '2', 'id': 0}, {'z': '3', 'b': '4', 'id': 1}]
 
-        Single column:
-        >>> csv = 'a\\n1\\n2'
+        Longer column:
+        >>> csv = 'a\\nx\\ny\\nz'
         >>> tabular = Tabular([csv])
         >>> tabular.header
         ['a']
         >>> tabular.rows
-        [{'a': '1', 'id': 0}, {'a': '2', 'id': 1}]
+        [{'a': 'x', 'id': 0}, {'a': 'y', 'id': 1}, {'a': 'z', 'id': 2}]
         '''
         if csvs is None:
             self.header = header
             self.rows = rows
             return
-        primary_key = 'id'
         list_of_lists_of_dicts = []
         for csv in csvs:
             try:
                 list_of_dicts = list(
                     DictReader(csv.splitlines(), dialect=Sniffer().sniff(csv)))
-            except:
+            except Error as e:
+                assert str(e) == 'Could not determine delimiter'
+                # Perhaps because it is a single column... Treat it that way.
                 lines = csv.splitlines()
                 key = lines[0]
                 list_of_dicts = [{key: line} for line in lines[1:]]
             list_of_lists_of_dicts.append(list_of_dicts)
-        key_sets = [l_of_d[0].keys()
-                    for l_of_d in list_of_lists_of_dicts]
-        key_union = set()
-        for s in key_sets:
-            key_union.update(s)
 
-        rows = [d for l_of_d in list_of_lists_of_dicts for d in l_of_d]
-        id_rows = [{**d, **{primary_key: i}} for (i, d) in enumerate(rows)]
-        self.header = sorted(key_union)
+        self.header = []
+        for l_of_d in list_of_lists_of_dicts:
+            for k in l_of_d[0].keys():
+                if k not in self.header:
+                    self.header.append(k)
+
+        dict_rows = [d for l_of_d in list_of_lists_of_dicts
+                     for d in l_of_d]
+        id_rows = [{**d, **{PRIMARY_KEY: i}}
+                   for (i, d) in enumerate(dict_rows)]
         self.rows = id_rows
 
     def make_outside_data_js(self):
@@ -113,7 +134,7 @@ class Tabular():
             'name': 'Data',
             'desc': {
                 'separator': '\t',
-                'primaryKey': 'id',
+                'primaryKey': PRIMARY_KEY,
                 'columns': column_defs},
             'url': 'data:text/plain;charset=utf-8,{}'.format(tsv_encoded)
         }]
@@ -155,7 +176,8 @@ class Tabular():
                 col_def['type'] = 'number'
                 col_def['domain'] = [min(values), max(values)]
                 col_def['numberFormat'] = '.1f'  # TODO: guess decimal points
-            # TODO: Guess categorical strings?
+            elif is_categorical(values):
+                col_def['type'] = 'categorical'
             else:
                 col_def['type'] = 'string'
             col_defs.append(col_def)
@@ -184,6 +206,31 @@ class Tabular():
             line = '\t'.join([row.get(h) or '' for h in self.header])
             lines.append(line)
         return '\n'.join(lines)
+
+
+def is_categorical(values):
+    '''
+    Smaller sets can have proportionally more diversity than larger sets.
+
+    >>> is_categorical([1,1,2,2])
+    False
+    >>> is_categorical([1,1,2,2,2])
+    True
+
+    >>> is_categorical([1,1,2,2,3,3,3,3])
+    False
+    >>> is_categorical([1,1,2,2,3,3,3,3,3])
+    True
+
+    >>> is_categorical(range(100))
+    False
+    >>> is_categorical(['x'] * 100 + list(range(100)))
+    True
+
+    It gets confused if a lot of uniform data leads the list...
+    Might be premature optimization?
+    '''
+    return len(set(values[:100])) < log2(len(values))
 
 
 def get_raw_column(column, list_of_dicts):
