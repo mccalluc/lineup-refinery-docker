@@ -99,8 +99,10 @@ class Tabular():
                     self.header.append(k)
 
 
-        rows = [d for l_of_d in list_of_lists_of_dicts for d in l_of_d]
-        id_rows = [{**d, **{PRIMARY_KEY: i}} for (i, d) in enumerate(rows)]
+        dict_rows = [d for l_of_d in list_of_lists_of_dicts
+                       for d in l_of_d]
+        id_rows = [{**d, **{PRIMARY_KEY: i}}
+                   for (i, d) in enumerate(dict_rows)]
         self.rows = id_rows
 
     def make_outside_data_js(self):
