@@ -39,6 +39,7 @@ def csvs_from_argv():
 
 PRIMARY_KEY = 'id'
 
+
 class Tabular():
 
     def __init__(self, csvs=None,
@@ -99,9 +100,8 @@ class Tabular():
                 if k not in self.header:
                     self.header.append(k)
 
-
         dict_rows = [d for l_of_d in list_of_lists_of_dicts
-                       for d in l_of_d]
+                     for d in l_of_d]
         id_rows = [{**d, **{PRIMARY_KEY: i}}
                    for (i, d) in enumerate(dict_rows)]
         self.rows = id_rows
