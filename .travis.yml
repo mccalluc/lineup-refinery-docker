@@ -2,9 +2,10 @@ sudo: required  # required for Docker
 language: python
 python:
 - 3.6.0
-
-script:
+install:
 - "pip install -r requirements-dev.txt"
+- "pip install -r context/requirements.txt"
+script:
 - "./test.sh"
 after_success:
 - "./after_success.sh"

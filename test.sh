@@ -23,7 +23,7 @@ source environment.sh
 
 
 start doctest
-python -m doctest context/*.py && echo 'doctests pass'
+python -m doctest context/*.py && echo 'doctests pass' || die 'Fix doctests'
 end doctest
 
 
@@ -41,8 +41,11 @@ start docker_run
 ./docker_run.sh
 retry
 echo "docker is responsive"
-diff fixtures/expected-outside_data.js <(curl http://localhost:8888/outside_data.js) \
-|| die 'Did not find expected outside_data.js'
+EXPECTED_FILE='fixtures/expected-outside_data.js'
+ACTUAL_TEXT=`curl http://localhost:8888/outside_data.js`
+diff $EXPECTED_FILE <(echo "$ACTUAL_TEXT") \
+|| die "Did not find expected $EXPECTED_FILE; Perhaps update to:
+$ACTUAL_TEXT"
 docker stop $CONTAINER_NAME
 docker rm $CONTAINER_NAME
 echo "container cleaned up"
