@@ -224,7 +224,7 @@ def is_categorical(values):
 
     >>> is_categorical(range(100))
     False
-    >>> is_categorical(['x' for i in range(100)] + list(range(100)))
+    >>> is_categorical(['x'] * 100 + list(range(100)))
     True
 
     It gets confused if a lot of uniform data leads the list...
