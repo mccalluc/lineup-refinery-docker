@@ -35,46 +35,47 @@ def csvs_from_argv():
             data.append(f.read())
     return data
 
+class Tabular():
 
-def read_csvs(csvs, primary_key):
-    '''
-    Normal:
-    >>> csv = 'a,c\\n1,2'
-    >>> tsv = 'a\\tb\\n3\\t4'
-    >>> data = read_csvs([csv, tsv], 'id')
-    >>> data['header']
-    ['a', 'b', 'c']
-    >>> data['rows']
-    [{'a': '1', 'c': '2', 'id': 0}, {'a': '3', 'b': '4', 'id': 1}]
+    def __init__(self, csvs):
+        '''
+        >>> csv = 'a,c\\n1,2'
+        >>> tsv = 'a\\tb\\n3\\t4'
+        >>> tabular = Tabular([csv, tsv])
+        >>> tabular.header
+        ['a', 'b', 'c']
+        >>> tabular.rows
+        [{'a': '1', 'c': '2', 'id': 0}, {'a': '3', 'b': '4', 'id': 1}]
 
-    Single column:
-    >>> csv = 'a\\n1\\n2'
-    >>> read_csvs([csv], 'id')
-    {'header': ['a'], 'rows': [{'a': '1', 'id': 0}, {'a': '2', 'id': 1}]}
-    '''
+        Single column:
+        >>> csv = 'a\\n1\\n2'
+        >>> tabular = Tabular([csv])
+        >>> tabular.header
+        ['a']
+        >>> tabular.rows
+        [{'a': '1', 'id': 0}, {'a': '2', 'id': 1}]
+        '''
+        primary_key = 'id'
+        list_of_lists_of_dicts = []
+        for csv in csvs:
+            try:
+                list_of_dicts = list(
+                    DictReader(csv.splitlines(), dialect=Sniffer().sniff(csv)))
+            except:
+                lines = csv.splitlines()
+                key = lines[0]
+                list_of_dicts = [{key: line} for line in lines[1:]]
+            list_of_lists_of_dicts.append(list_of_dicts)
+        key_sets = [l_of_d[0].keys()
+                    for l_of_d in list_of_lists_of_dicts]
+        key_union = set()
+        for s in key_sets:
+            key_union.update(s)
 
-    list_of_lists_of_dicts = []
-    for csv in csvs:
-        try:
-            list_of_dicts = list(
-                DictReader(csv.splitlines(), dialect=Sniffer().sniff(csv)))
-        except:
-            lines = csv.splitlines()
-            key = lines[0]
-            list_of_dicts = [{key: line} for line in lines[1:]]
-        list_of_lists_of_dicts.append(list_of_dicts)
-    key_sets = [l_of_d[0].keys()
-                for l_of_d in list_of_lists_of_dicts]
-    key_union = set()
-    for s in key_sets:
-        key_union.update(s)
-
-    rows = [d for l_of_d in list_of_lists_of_dicts for d in l_of_d]
-    id_rows = [{**d, **{primary_key: i}} for (i, d) in enumerate(rows)]
-    return {
-        'header': sorted(key_union),
-        'rows': id_rows
-    }
+        rows = [d for l_of_d in list_of_lists_of_dicts for d in l_of_d]
+        id_rows = [{**d, **{primary_key: i}} for (i, d) in enumerate(rows)]
+        self.header = sorted(key_union)
+        self.rows = id_rows
 
 
 def get_raw_column(column, list_of_dicts):
