@@ -3,17 +3,12 @@ This builds a Refinery visualization Docker image for Lineup.
 
 For a preview, you can run the Docker container locally with your own data:
 ```
-docker run \
-      --detach \
-      --publish 8888:80 \
-      --volume /my/local/data.csv:/tmp/1.csv \
-      mccalluc/lineup_refinery \
-      ../on_startup.sh /tmp/1.csv
+docker run -d -p 8888:80 -v $DATA:/tmp/1.csv mccalluc/lineup_refinery ../on_startup.sh /tmp/1.csv
 ``
 
-Change `/my/local/data.csv` to fit your needs, but the other paths are internal
-to the container and will not be changed. The `docker_run.sh` provides a simpler
-interface.
+Set `$DATA` to your input file, but the other paths are internal
+to the container and will not be changed. If you checkout the repo,
+`docker_run.sh` provides a simpler interface.
 
 
 ## Development
