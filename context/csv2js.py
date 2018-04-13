@@ -35,6 +35,7 @@ def csvs_from_argv():
             data.append(f.read())
     return data
 
+
 class Tabular():
 
     def __init__(self, csvs=None,
