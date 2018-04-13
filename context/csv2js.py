@@ -5,6 +5,7 @@ import sys
 import urllib
 from csv import DictReader, Sniffer, Error
 import re
+from math import log2
 
 
 def csvs_from_env():
@@ -175,7 +176,8 @@ class Tabular():
                 col_def['type'] = 'number'
                 col_def['domain'] = [min(values), max(values)]
                 col_def['numberFormat'] = '.1f'  # TODO: guess decimal points
-            # TODO: Guess categorical strings?
+            elif is_categorical(values):
+                col_def['type'] = 'categorical'
             else:
                 col_def['type'] = 'string'
             col_defs.append(col_def)
@@ -204,6 +206,25 @@ class Tabular():
             line = '\t'.join([row.get(h) or '' for h in self.header])
             lines.append(line)
         return '\n'.join(lines)
+
+
+def is_categorical(values):
+    '''
+    Smaller sets can have proportionally more diversity than larger sets.
+    TODO: We don't need to read the whole long list: Figure out how many it
+    is allowed, and then read a subset.
+
+    >>> is_categorical([1,1,2,2])
+    False
+    >>> is_categorical([1,1,2,2,2])
+    True
+
+    >>> is_categorical([1,1,2,2,3,3,3,3])
+    False
+    >>> is_categorical([1,1,2,2,3,3,3,3,3])
+    True
+    '''
+    return len(set(values)) < log2(len(values))
 
 
 def get_raw_column(column, list_of_dicts):
