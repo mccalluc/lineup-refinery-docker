@@ -3,7 +3,7 @@ import os
 import json
 import sys
 import urllib
-from csv import DictReader, Sniffer
+from csv import DictReader, Sniffer, Error
 import re
 
 
@@ -43,21 +43,35 @@ class Tabular():
                  # unit tests more clear.
                  header=None, rows=None):
         '''
-        >>> csv = 'a,c\\n1,2'
-        >>> tsv = 'a\\tb\\n3\\t4'
+        Preserve order:
+        >>> csv = 'q,u,i,c,k,b,r,o,w,n\\n1,2,3,4,5,6,7,8,9,10'
+        >>> tabular = Tabular([csv])
+        >>> ''.join(tabular.header)
+        'quickbrown'
+
+        # TODO:
+        # Preserve order with sparse data:
+        # >>> csv = 'q,u,i,c,k,b,r,o,w,n\\n,,,,X\\n,,Y'
+        # >>> tabular = Tabular([csv])
+        # >>> ''.join(tabular.header)
+        # 'quickbrown'
+
+        Merge files:
+        >>> csv = 'z,c\\n1,2'
+        >>> tsv = 'z\\tb\\n3\\t4'
         >>> tabular = Tabular([csv, tsv])
         >>> tabular.header
-        ['a', 'b', 'c']
+        ['z', 'c', 'b']
         >>> tabular.rows
-        [{'a': '1', 'c': '2', 'id': 0}, {'a': '3', 'b': '4', 'id': 1}]
+        [{'z': '1', 'c': '2', 'id': 0}, {'z': '3', 'b': '4', 'id': 1}]
 
-        Single column:
-        >>> csv = 'a\\n1\\n2'
+        Longer column:
+        >>> csv = 'a\\nx\\ny\\nz'
         >>> tabular = Tabular([csv])
         >>> tabular.header
         ['a']
         >>> tabular.rows
-        [{'a': '1', 'id': 0}, {'a': '2', 'id': 1}]
+        [{'a': 'x', 'id': 0}, {'a': 'y', 'id': 1}, {'a': 'z', 'id': 2}]
         '''
         if csvs is None:
             self.header = header
@@ -69,20 +83,23 @@ class Tabular():
             try:
                 list_of_dicts = list(
                     DictReader(csv.splitlines(), dialect=Sniffer().sniff(csv)))
-            except:
+            except Error as e:
+                assert str(e) == 'Could not determine delimiter'
+                # Perhaps because it is a single column... Treat it that way.
                 lines = csv.splitlines()
                 key = lines[0]
                 list_of_dicts = [{key: line} for line in lines[1:]]
             list_of_lists_of_dicts.append(list_of_dicts)
-        key_sets = [l_of_d[0].keys()
-                    for l_of_d in list_of_lists_of_dicts]
-        key_union = set()
-        for s in key_sets:
-            key_union.update(s)
+
+        self.header = []
+        for l_of_d in list_of_lists_of_dicts:
+            for k in l_of_d[0].keys():
+                if k not in self.header:
+                    self.header.append(k)
+
 
         rows = [d for l_of_d in list_of_lists_of_dicts for d in l_of_d]
         id_rows = [{**d, **{primary_key: i}} for (i, d) in enumerate(rows)]
-        self.header = sorted(key_union)
         self.rows = id_rows
 
     def make_outside_data_js(self):
