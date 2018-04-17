@@ -7,7 +7,6 @@ from math import log2
 PRIMARY_KEY = 'id'
 
 
-
 def is_categorical(values):
     '''
     Smaller sets can have proportionally more diversity than larger sets.
@@ -175,7 +174,6 @@ class Tabular():
         id_rows = [{**d, **{PRIMARY_KEY: i}}
                    for (i, d) in enumerate(dict_rows)]
         self.rows = id_rows
-
 
     def make_outside_data_js(self):
         '''
