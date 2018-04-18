@@ -9,7 +9,7 @@ from io import BytesIO
 from tabular import Tabular
 
 
-def bin_files_from_env():
+def bin_contents_from_env():
     input_json_envvar = os.environ.get("INPUT_JSON")
     input_json_url_envvar = os.environ.get("INPUT_JSON_URL")
     input_json_path = '/var/input.json'
@@ -34,7 +34,7 @@ def bin_files_from_env():
     return [requests.get(url).content for url in config["file_relationships"]]
 
 
-def bin_files_from_argv():
+def bin_contents_from_argv():
     data = []
     for path in sys.argv[1:]:
         with open(path, 'rb') as f:
@@ -58,9 +58,10 @@ def try_unzip(bin_content):
 
 
 if __name__ == '__main__':
-    bin_files = bin_files_from_argv() if sys.argv[1:] else bin_files_from_env()
+    bin_contents = bin_contents_from_argv() if sys.argv[1:] \
+        else bin_contents_from_env()
     # "latin_1" seems likely to be correct... If it becomes an issue,
     # we could have another user supplied parameter.
-    csvs = [try_unzip(file).decode('latin_1') for file in bin_files]
+    csvs = [try_unzip(file).decode('latin_1') for file in bin_contents]
     tab = Tabular(csvs)
     print(tab.make_outside_data_js())
