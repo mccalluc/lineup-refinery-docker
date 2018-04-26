@@ -228,6 +228,32 @@ class Tabular():
             "id": "data",
             "name": "Data",
             "url": "data:text/plain;charset=utf-8,a%0A1" } ];
+
+        >>> tsv = 'b\\n2'
+        >>> tabular2 = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
+        >>> print(tabular2.make_outside_data_js())
+        var outside_data = [
+          {
+            "desc": {
+              "columns": [
+                {
+                  "column": "a",
+                  "domain": [ 1, 1 ],
+                  "numberFormat": "d",
+                  "type": "number" },
+                {
+                  "column": "Refinery file",
+                  "type": "string" },
+                {
+                  "column": "b",
+                  "domain": [ 2, 2 ],
+                  "numberFormat": "d",
+                  "type": "number" } ],
+              "primaryKey": "id",
+              "separator": "\\t" },
+            "id": "data",
+            "name": "Data",
+            "url": "data:text/plain;charset=utf-8,a%09Refinery%20file%09b%0A1%09fake.csv%09%0A%09fake.tsv%092" } ];
         '''
 
         column_defs = self._make_column_defs()
