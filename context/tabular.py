@@ -112,6 +112,8 @@ def add_k_v_to_each(k, v, list_of_dicts):
         d[k] = v
     return list_of_dicts
 
+FILE_COLUMN = 'file'
+
 
 class Tabular():
 
@@ -143,6 +145,18 @@ class Tabular():
         {'z': '1', 'c': '2', 'file': 'fake.csv', 'id': 0}
         >>> tabular.rows[1]
         {'z': '3', 'b': '4', 'file': 'fake.tsv', 'id': 1}
+
+        TODO: Handle collisions with injected "file" columns:
+        (If source data has a "file" column, it gets clobbered.)
+        >>> csv = 'file,c\\n1,2'
+        >>> tsv = 'file\\tb\\n3\\t4'
+        >>> tabular = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
+        >>> tabular.header
+        ['file', 'c', 'b']
+        >>> tabular.rows[0]
+        {'file': 'fake.csv', 'c': '2', 'id': 0}
+        >>> tabular.rows[1]
+        {'file': 'fake.tsv', 'b': '4', 'id': 1}
 
         Longer column:
         >>> csv = 'a\\nx\\ny\\nz'
@@ -181,7 +195,7 @@ class Tabular():
             # If there is only one file, we don't need
             # an extra column to distinguish it.
             if len(path_data_dict) > 1:
-                add_k_v_to_each('file', path, list_of_dicts)
+                add_k_v_to_each(FILE_COLUMN, path, list_of_dicts)
             dict_of_lists_of_dicts[path] = list_of_dicts
 
         self.header = []
