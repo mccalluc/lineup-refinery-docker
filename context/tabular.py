@@ -138,11 +138,11 @@ class Tabular():
         >>> tsv = 'z\\tb\\n3\\t4'
         >>> tabular = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
         >>> tabular.header
-        ['z', 'c', 'path', 'b']
+        ['z', 'c', 'file', 'b']
         >>> tabular.rows[0]
-        {'z': '1', 'c': '2', 'path': 'fake.csv', 'id': 0}
+        {'z': '1', 'c': '2', 'file': 'fake.csv', 'id': 0}
         >>> tabular.rows[1]
-        {'z': '3', 'b': '4', 'path': 'fake.tsv', 'id': 1}
+        {'z': '3', 'b': '4', 'file': 'fake.tsv', 'id': 1}
 
         Longer column:
         >>> csv = 'a\\nx\\ny\\nz'
@@ -181,7 +181,7 @@ class Tabular():
             # If there is only one file, we don't need
             # an extra column to distinguish it.
             if len(path_data_dict) > 1:
-                add_k_v_to_each('path', path, list_of_dicts)
+                add_k_v_to_each('file', path, list_of_dicts)
             dict_of_lists_of_dicts[path] = list_of_dicts
 
         self.header = []
