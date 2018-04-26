@@ -112,7 +112,7 @@ def add_k_v_to_each(k, v, list_of_dicts):
         d[k] = v
     return list_of_dicts
 
-FILE_COLUMN = 'file'
+FILE_COLUMN = 'Refinery file'
 
 
 class Tabular():
@@ -140,23 +140,22 @@ class Tabular():
         >>> tsv = 'z\\tb\\n3\\t4'
         >>> tabular = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
         >>> tabular.header
-        ['z', 'c', 'file', 'b']
+        ['z', 'c', 'Refinery file', 'b']
         >>> tabular.rows[0]
-        {'z': '1', 'c': '2', 'file': 'fake.csv', 'id': 0}
+        {'z': '1', 'c': '2', 'Refinery file': 'fake.csv', 'id': 0}
         >>> tabular.rows[1]
-        {'z': '3', 'b': '4', 'file': 'fake.tsv', 'id': 1}
+        {'z': '3', 'b': '4', 'Refinery file': 'fake.tsv', 'id': 1}
 
-        TODO: Handle collisions with injected "file" columns:
-        (If source data has a "file" column, it gets clobbered.)
-        >>> csv = 'file,c\\n1,2'
-        >>> tsv = 'file\\tb\\n3\\t4'
+        If source data has a "Refinery file" column, it gets clobbered.)
+        >>> csv = 'Refinery file,c\\n1,2'
+        >>> tsv = 'Refinery file\\tb\\n3\\t4'
         >>> tabular = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
         >>> tabular.header
-        ['file', 'c', 'b']
+        ['Refinery file', 'c', 'b']
         >>> tabular.rows[0]
-        {'file': 'fake.csv', 'c': '2', 'id': 0}
+        {'Refinery file': 'fake.csv', 'c': '2', 'id': 0}
         >>> tabular.rows[1]
-        {'file': 'fake.tsv', 'b': '4', 'id': 1}
+        {'Refinery file': 'fake.tsv', 'b': '4', 'id': 1}
 
         Longer column:
         >>> csv = 'a\\nx\\ny\\nz'
