@@ -151,9 +151,8 @@ class Tabular():
             self.header = header
             self.rows = rows
             return
-        csvs = path_data_dict.values()  # TODO: use paths
-        list_of_lists_of_dicts = []
-        for csv in csvs:
+        dict_of_lists_of_dicts = {}
+        for path, csv in path_data_dict.items():
             try:
                 list_of_dicts = parse_to_dicts(csv)
             except Error as e:
@@ -162,15 +161,15 @@ class Tabular():
                 lines = csv.splitlines()
                 key = lines[0]
                 list_of_dicts = [{key: line} for line in lines[1:]]
-            list_of_lists_of_dicts.append(list_of_dicts)
+            dict_of_lists_of_dicts[path] = list_of_dicts
 
         self.header = []
-        for l_of_d in list_of_lists_of_dicts:
+        for l_of_d in dict_of_lists_of_dicts.values():
             for k in l_of_d[0].keys():
                 if k not in self.header:
                     self.header.append(k)
 
-        dict_rows = [d for l_of_d in list_of_lists_of_dicts
+        dict_rows = [d for l_of_d in dict_of_lists_of_dicts.values()
                      for d in l_of_d]
         id_rows = [{**d, **{PRIMARY_KEY: i}}
                    for (i, d) in enumerate(dict_rows)]
