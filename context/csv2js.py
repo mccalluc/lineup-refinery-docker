@@ -10,6 +10,20 @@ from tabular import Tabular
 
 
 def path_content_dict_from_env():
+    '''
+    >>> os.environ['INPUT_JSON'] = """
+    ... {{"file_relationships": [
+    ...    "{repo}/fixtures/fake.csv",
+    ...    "{repo}/fixtures/abc.txt.gz"
+    ... ]}}
+    ... """.format(repo='https://raw.githubusercontent.com/refinery-platform/'
+    ...                 'lineup-refinery-docker/v0.0.8')
+    >>> d = path_content_dict_from_env()
+    >>> d.keys()
+    dict_keys(['fake.csv', 'abc.txt.gz'])
+    >>> d['fake.csv']
+    b'a,b,c\\n1,2,3\\n7,8,9'
+    '''
     input_json_envvar = os.environ.get("INPUT_JSON")
     input_json_url_envvar = os.environ.get("INPUT_JSON_URL")
     input_json_path = '/var/input.json'
