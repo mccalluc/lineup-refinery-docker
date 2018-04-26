@@ -124,7 +124,7 @@ class Tabular():
         >>> csv = 'q,u,i,c,k,b,r,o,w,n\\n1,2,3,4,5,6,7,8,9,10'
         >>> tabular = Tabular({'fake.csv': csv})
         >>> ''.join(tabular.header)
-        'quickbrownpath'
+        'quickbrown'
 
         # TODO:
         # Preserve order with sparse data:
@@ -148,13 +148,13 @@ class Tabular():
         >>> csv = 'a\\nx\\ny\\nz'
         >>> tabular = Tabular({'fake.csv': csv})
         >>> tabular.header
-        ['a', 'path']
+        ['a']
         >>> tabular.rows[0]
-        {'a': 'x', 'path': 'fake.csv', 'id': 0}
+        {'a': 'x', 'id': 0}
         >>> tabular.rows[1]
-        {'a': 'y', 'path': 'fake.csv', 'id': 1}
+        {'a': 'y', 'id': 1}
         >>> tabular.rows[2]
-        {'a': 'z', 'path': 'fake.csv', 'id': 2}
+        {'a': 'z', 'id': 2}
 
         # Missing header values:
         # >>> csv = 'a,b,c,d,\\n1,2,3,4,\\n1,2,3,4,5'
@@ -178,7 +178,10 @@ class Tabular():
                 lines = csv.splitlines()
                 key = lines[0]
                 list_of_dicts = [{key: line} for line in lines[1:]]
-            add_k_v_to_each('path', path, list_of_dicts)
+            # If there is only one file, we don't need
+            # an extra column to distinguish it.
+            if len(path_data_dict) > 1:
+                add_k_v_to_each('path', path, list_of_dicts)
             dict_of_lists_of_dicts[path] = list_of_dicts
 
         self.header = []
@@ -206,15 +209,12 @@ class Tabular():
                   "column": "a",
                   "domain": [ 1, 1 ],
                   "numberFormat": "d",
-                  "type": "number" },
-                {
-                  "column": "path",
-                  "type": "string" } ],
+                  "type": "number" } ],
               "primaryKey": "id",
               "separator": "\\t" },
             "id": "data",
             "name": "Data",
-            "url": "data:text/plain;charset=utf-8,a%09path%0A1%09fake.csv" } ];
+            "url": "data:text/plain;charset=utf-8,a%0A1" } ];
         '''
 
         column_defs = self._make_column_defs()
