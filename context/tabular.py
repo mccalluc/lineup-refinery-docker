@@ -112,6 +112,7 @@ def add_k_v_to_each(k, v, list_of_dicts):
         d[k] = v
     return list_of_dicts
 
+
 FILE_COLUMN = 'Refinery file'
 
 
