@@ -104,14 +104,14 @@ def parse_to_dicts(csv):
 
 class Tabular():
 
-    def __init__(self, csvs=None,
+    def __init__(self, path_data_dict=None,
                  # header and rows kwargs are just for making
                  # unit tests more clear.
                  header=None, rows=None):
         '''
         Preserve order:
         >>> csv = 'q,u,i,c,k,b,r,o,w,n\\n1,2,3,4,5,6,7,8,9,10'
-        >>> tabular = Tabular([csv])
+        >>> tabular = Tabular({'fake.csv': csv})
         >>> ''.join(tabular.header)
         'quickbrown'
 
@@ -125,7 +125,7 @@ class Tabular():
         Merge files:
         >>> csv = 'z,c\\n1,2'
         >>> tsv = 'z\\tb\\n3\\t4'
-        >>> tabular = Tabular([csv, tsv])
+        >>> tabular = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
         >>> tabular.header
         ['z', 'c', 'b']
         >>> tabular.rows
@@ -133,7 +133,7 @@ class Tabular():
 
         Longer column:
         >>> csv = 'a\\nx\\ny\\nz'
-        >>> tabular = Tabular([csv])
+        >>> tabular = Tabular({'fake.csv': csv})
         >>> tabular.header
         ['a']
         >>> tabular.rows
@@ -147,10 +147,11 @@ class Tabular():
         # >>> tabular.rows
         # [{'a': '1', 'c': '3', 'id': 0}]
         '''
-        if csvs is None:
+        if path_data_dict is None:
             self.header = header
             self.rows = rows
             return
+        csvs = path_data_dict.values()  # TODO: use paths
         list_of_lists_of_dicts = []
         for csv in csvs:
             try:
@@ -178,7 +179,7 @@ class Tabular():
     def make_outside_data_js(self):
         '''
         >>> csv = 'a\\n1'
-        >>> tabular = Tabular([csv])
+        >>> tabular = Tabular({'fake.csv': csv})
         >>> print(tabular.make_outside_data_js())
         var outside_data = [
           {

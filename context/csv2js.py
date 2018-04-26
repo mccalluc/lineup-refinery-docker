@@ -85,5 +85,5 @@ if __name__ == '__main__':
     path_unzip_dict = {
         path: try_unzip(content).decode('latin_1')
         for (path, content) in path_content_dict.items()}
-    tab = Tabular(path_unzip_dict.values())  # TODO
+    tab = Tabular(path_unzip_dict)
     print(tab.make_outside_data_js())
