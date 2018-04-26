@@ -102,6 +102,17 @@ def parse_to_dicts(csv):
     return list(DictReader(lines, dialect=dialect))
 
 
+def add_k_v_to_each(k, v, list_of_dicts):
+    '''
+    >>> l_of_d = [{'a': 1}, {'a': 2}]
+    >>> add_k_v_to_each('path', 'fake.csv', l_of_d)
+    [{'a': 1, 'path': 'fake.csv'}, {'a': 2, 'path': 'fake.csv'}]
+    '''
+    for d in list_of_dicts:
+        d[k] = v
+    return list_of_dicts
+
+
 class Tabular():
 
     def __init__(self, path_data_dict=None,
@@ -113,7 +124,7 @@ class Tabular():
         >>> csv = 'q,u,i,c,k,b,r,o,w,n\\n1,2,3,4,5,6,7,8,9,10'
         >>> tabular = Tabular({'fake.csv': csv})
         >>> ''.join(tabular.header)
-        'quickbrown'
+        'quickbrownpath'
 
         # TODO:
         # Preserve order with sparse data:
@@ -127,17 +138,23 @@ class Tabular():
         >>> tsv = 'z\\tb\\n3\\t4'
         >>> tabular = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
         >>> tabular.header
-        ['z', 'c', 'b']
-        >>> tabular.rows
-        [{'z': '1', 'c': '2', 'id': 0}, {'z': '3', 'b': '4', 'id': 1}]
+        ['z', 'c', 'path', 'b']
+        >>> tabular.rows[0]
+        {'z': '1', 'c': '2', 'path': 'fake.csv', 'id': 0}
+        >>> tabular.rows[1]
+        {'z': '3', 'b': '4', 'path': 'fake.tsv', 'id': 1}
 
         Longer column:
         >>> csv = 'a\\nx\\ny\\nz'
         >>> tabular = Tabular({'fake.csv': csv})
         >>> tabular.header
-        ['a']
-        >>> tabular.rows
-        [{'a': 'x', 'id': 0}, {'a': 'y', 'id': 1}, {'a': 'z', 'id': 2}]
+        ['a', 'path']
+        >>> tabular.rows[0]
+        {'a': 'x', 'path': 'fake.csv', 'id': 0}
+        >>> tabular.rows[1]
+        {'a': 'y', 'path': 'fake.csv', 'id': 1}
+        >>> tabular.rows[2]
+        {'a': 'z', 'path': 'fake.csv', 'id': 2}
 
         # Missing header values:
         # >>> csv = 'a,b,c,d,\\n1,2,3,4,\\n1,2,3,4,5'
@@ -161,6 +178,7 @@ class Tabular():
                 lines = csv.splitlines()
                 key = lines[0]
                 list_of_dicts = [{key: line} for line in lines[1:]]
+            add_k_v_to_each('path', path, list_of_dicts)
             dict_of_lists_of_dicts[path] = list_of_dicts
 
         self.header = []
@@ -188,12 +206,15 @@ class Tabular():
                   "column": "a",
                   "domain": [ 1, 1 ],
                   "numberFormat": "d",
-                  "type": "number" } ],
+                  "type": "number" },
+                {
+                  "column": "path",
+                  "type": "string" } ],
               "primaryKey": "id",
               "separator": "\\t" },
             "id": "data",
             "name": "Data",
-            "url": "data:text/plain;charset=utf-8,a%0A1" } ];
+            "url": "data:text/plain;charset=utf-8,a%09path%0A1%09fake.csv" } ];
         '''
 
         column_defs = self._make_column_defs()
