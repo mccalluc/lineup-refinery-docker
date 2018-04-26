@@ -146,16 +146,16 @@ class Tabular():
         >>> tabular.rows[1]
         {'z': '3', 'b': '4', 'Refinery file': 'fake.tsv', 'id': 1}
 
-        If source data has a "Refinery file" column, it gets clobbered.)
-        >>> csv = 'Refinery file,c\\n1,2'
-        >>> tsv = 'Refinery file\\tb\\n3\\t4'
+        If source data has a "Refinery file" column, it gets clobbered.
+        >>> csv = 'c,Refinery file\\n1,2'
+        >>> tsv = 'b\\tRefinery file\\n3\\t4'
         >>> tabular = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
         >>> tabular.header
-        ['Refinery file', 'c', 'b']
+        ['c', 'Refinery file', 'b']
         >>> tabular.rows[0]
-        {'Refinery file': 'fake.csv', 'c': '2', 'id': 0}
+        {'c': '1', 'Refinery file': 'fake.csv', 'id': 0}
         >>> tabular.rows[1]
-        {'Refinery file': 'fake.tsv', 'b': '4', 'id': 1}
+        {'b': '3', 'Refinery file': 'fake.tsv', 'id': 1}
 
         Longer column:
         >>> csv = 'a\\nx\\ny\\nz'
