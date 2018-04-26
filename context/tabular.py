@@ -140,7 +140,7 @@ class Tabular():
         >>> tsv = 'z\\tb\\n3\\t4'
         >>> tabular = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
         >>> tabular.header
-        ['z', 'c', 'Refinery file', 'b']
+        ['Refinery file', 'z', 'c', 'b']
         >>> tabular.rows[0]
         {'z': '1', 'c': '2', 'Refinery file': 'fake.csv', 'id': 0}
         >>> tabular.rows[1]
@@ -151,7 +151,7 @@ class Tabular():
         >>> tsv = 'b\\tRefinery file\\n3\\t4'
         >>> tabular = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
         >>> tabular.header
-        ['c', 'Refinery file', 'b']
+        ['Refinery file', 'c', 'b']
         >>> tabular.rows[0]
         {'c': '1', 'Refinery file': 'fake.csv', 'id': 0}
         >>> tabular.rows[1]
@@ -201,7 +201,10 @@ class Tabular():
         for l_of_d in dict_of_lists_of_dicts.values():
             for k in l_of_d[0].keys():
                 if k not in self.header:
-                    self.header.append(k)
+                    if k == FILE_COLUMN:
+                        self.header.insert(0, k)
+                    else:
+                        self.header.append(k)
 
         dict_rows = [d for l_of_d in dict_of_lists_of_dicts.values()
                      for d in l_of_d]
@@ -237,13 +240,13 @@ class Tabular():
             "desc": {
               "columns": [
                 {
+                  "column": "Refinery file",
+                  "type": "string" },
+                {
                   "column": "a",
                   "domain": [ 1, 1 ],
                   "numberFormat": "d",
                   "type": "number" },
-                {
-                  "column": "Refinery file",
-                  "type": "string" },
                 {
                   "column": "b",
                   "domain": [ 2, 2 ],
@@ -253,7 +256,7 @@ class Tabular():
               "separator": "\\t" },
             "id": "data",
             "name": "Data",
-            "url": "data:text/plain;charset=utf-8,a%09Refinery%20file%09b%0A1%09fake.csv%09%0A%09fake.tsv%092" } ];
+            "url": "data:text/plain;charset=utf-8,Refinery%20file%09a%09b%0Afake.csv%091%09%0Afake.tsv%09%092" } ];
         '''
 
         column_defs = self._make_column_defs()
