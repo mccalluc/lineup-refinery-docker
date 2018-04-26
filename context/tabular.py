@@ -235,7 +235,7 @@ class Tabular():
 
         >>> tsv = 'b\\n2'
         >>> tabular2 = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
-        >>> print(tabular2.make_outside_data_js())
+        >>> print(tabular2.make_outside_data_js()[:-40])
         var outside_data = [
           {
             "desc": {
@@ -257,7 +257,7 @@ class Tabular():
               "separator": "\\t" },
             "id": "data",
             "name": "Data",
-            "url": "data:text/plain;charset=utf-8,Refinery%20file%09a%09b%0Afake.csv%091%09%0Afake.tsv%09%092" } ];
+            "url": "data:text/plain;charset=utf-8,Refinery%20file%09a%09b%0
         '''
 
         column_defs = self._make_column_defs()

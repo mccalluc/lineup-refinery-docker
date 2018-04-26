@@ -3,6 +3,9 @@ var outside_data = [
     "desc": {
       "columns": [
         {
+          "column": "Refinery file",
+          "type": "string" },
+        {
           "column": "a",
           "domain": [ 1, 7 ],
           "numberFormat": "d",
@@ -36,4 +39,4 @@ var outside_data = [
       "separator": "\t" },
     "id": "data",
     "name": "Data",
-    "url": "data:text/plain;charset=utf-8,a%09b%09c%09x%09y%09z%0A1%092%093%09%09%09%0A7%098%099%09%09%09%0A%09%09%091%092%093" } ];
+    "url": "data:text/plain;charset=utf-8,Refinery%20file%09a%09b%09c%09x%09y%09z%0Afake.csv%091%092%093%09%09%09%0Afake.csv%097%098%099%09%09%09%0Afake.tsv%09%09%09%091%092%093" } ];
