@@ -102,16 +102,30 @@ def parse_to_dicts(csv):
     return list(DictReader(lines, dialect=dialect))
 
 
+def add_k_v_to_each(k, v, list_of_dicts):
+    '''
+    >>> l_of_d = [{'a': 1}, {'a': 2}]
+    >>> add_k_v_to_each('path', 'fake.csv', l_of_d)
+    [{'a': 1, 'path': 'fake.csv'}, {'a': 2, 'path': 'fake.csv'}]
+    '''
+    for d in list_of_dicts:
+        d[k] = v
+    return list_of_dicts
+
+
+FILE_COLUMN = 'Refinery file'
+
+
 class Tabular():
 
-    def __init__(self, csvs=None,
+    def __init__(self, path_data_dict=None,
                  # header and rows kwargs are just for making
                  # unit tests more clear.
                  header=None, rows=None):
         '''
         Preserve order:
         >>> csv = 'q,u,i,c,k,b,r,o,w,n\\n1,2,3,4,5,6,7,8,9,10'
-        >>> tabular = Tabular([csv])
+        >>> tabular = Tabular({'fake.csv': csv})
         >>> ''.join(tabular.header)
         'quickbrown'
 
@@ -125,19 +139,36 @@ class Tabular():
         Merge files:
         >>> csv = 'z,c\\n1,2'
         >>> tsv = 'z\\tb\\n3\\t4'
-        >>> tabular = Tabular([csv, tsv])
+        >>> tabular = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
         >>> tabular.header
-        ['z', 'c', 'b']
-        >>> tabular.rows
-        [{'z': '1', 'c': '2', 'id': 0}, {'z': '3', 'b': '4', 'id': 1}]
+        ['Refinery file', 'z', 'c', 'b']
+        >>> tabular.rows[0]
+        {'z': '1', 'c': '2', 'Refinery file': 'fake.csv', 'id': 0}
+        >>> tabular.rows[1]
+        {'z': '3', 'b': '4', 'Refinery file': 'fake.tsv', 'id': 1}
+
+        If source data has a "Refinery file" column, it gets clobbered.
+        >>> csv = 'c,Refinery file\\n1,2'
+        >>> tsv = 'b\\tRefinery file\\n3\\t4'
+        >>> tabular = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
+        >>> tabular.header
+        ['Refinery file', 'c', 'b']
+        >>> tabular.rows[0]
+        {'c': '1', 'Refinery file': 'fake.csv', 'id': 0}
+        >>> tabular.rows[1]
+        {'b': '3', 'Refinery file': 'fake.tsv', 'id': 1}
 
         Longer column:
         >>> csv = 'a\\nx\\ny\\nz'
-        >>> tabular = Tabular([csv])
+        >>> tabular = Tabular({'fake.csv': csv})
         >>> tabular.header
         ['a']
-        >>> tabular.rows
-        [{'a': 'x', 'id': 0}, {'a': 'y', 'id': 1}, {'a': 'z', 'id': 2}]
+        >>> tabular.rows[0]
+        {'a': 'x', 'id': 0}
+        >>> tabular.rows[1]
+        {'a': 'y', 'id': 1}
+        >>> tabular.rows[2]
+        {'a': 'z', 'id': 2}
 
         # Missing header values:
         # >>> csv = 'a,b,c,d,\\n1,2,3,4,\\n1,2,3,4,5'
@@ -147,12 +178,12 @@ class Tabular():
         # >>> tabular.rows
         # [{'a': '1', 'c': '3', 'id': 0}]
         '''
-        if csvs is None:
+        if path_data_dict is None:
             self.header = header
             self.rows = rows
             return
-        list_of_lists_of_dicts = []
-        for csv in csvs:
+        dict_of_lists_of_dicts = {}
+        for path, csv in path_data_dict.items():
             try:
                 list_of_dicts = parse_to_dicts(csv)
             except Error as e:
@@ -161,15 +192,22 @@ class Tabular():
                 lines = csv.splitlines()
                 key = lines[0]
                 list_of_dicts = [{key: line} for line in lines[1:]]
-            list_of_lists_of_dicts.append(list_of_dicts)
+            # If there is only one file, we don't need
+            # an extra column to distinguish it.
+            if len(path_data_dict) > 1:
+                add_k_v_to_each(FILE_COLUMN, path, list_of_dicts)
+            dict_of_lists_of_dicts[path] = list_of_dicts
 
         self.header = []
-        for l_of_d in list_of_lists_of_dicts:
+        for l_of_d in dict_of_lists_of_dicts.values():
             for k in l_of_d[0].keys():
                 if k not in self.header:
-                    self.header.append(k)
+                    if k == FILE_COLUMN:
+                        self.header.insert(0, k)
+                    else:
+                        self.header.append(k)
 
-        dict_rows = [d for l_of_d in list_of_lists_of_dicts
+        dict_rows = [d for l_of_d in dict_of_lists_of_dicts.values()
                      for d in l_of_d]
         id_rows = [{**d, **{PRIMARY_KEY: i}}
                    for (i, d) in enumerate(dict_rows)]
@@ -178,7 +216,7 @@ class Tabular():
     def make_outside_data_js(self):
         '''
         >>> csv = 'a\\n1'
-        >>> tabular = Tabular([csv])
+        >>> tabular = Tabular({'fake.csv': csv})
         >>> print(tabular.make_outside_data_js())
         var outside_data = [
           {
@@ -194,6 +232,32 @@ class Tabular():
             "id": "data",
             "name": "Data",
             "url": "data:text/plain;charset=utf-8,a%0A1" } ];
+
+        >>> tsv = 'b\\n2'
+        >>> tabular2 = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
+        >>> print(tabular2.make_outside_data_js()[:-40])
+        var outside_data = [
+          {
+            "desc": {
+              "columns": [
+                {
+                  "column": "Refinery file",
+                  "type": "string" },
+                {
+                  "column": "a",
+                  "domain": [ 1, 1 ],
+                  "numberFormat": "d",
+                  "type": "number" },
+                {
+                  "column": "b",
+                  "domain": [ 2, 2 ],
+                  "numberFormat": "d",
+                  "type": "number" } ],
+              "primaryKey": "id",
+              "separator": "\\t" },
+            "id": "data",
+            "name": "Data",
+            "url": "data:text/plain;charset=utf-8,Refinery%20file%09a%09b%0
         '''
 
         column_defs = self._make_column_defs()
