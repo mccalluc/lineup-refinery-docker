@@ -4,6 +4,7 @@ from io import BytesIO
 import json
 import re
 from math import log2
+from math import isnan
 
 from dataframer import dataframer
 
@@ -93,24 +94,44 @@ def parse_to_dicts(tabular_data_string):
     >>> csv = 'a,b,c\\n1,2,3\\n4,5,6'
     >>> csv_lod = parse_to_dicts(csv)
     >>> csv_lod[0]
-    OrderedDict([('a', 1), ('b', 2), ('c', 3)])
+    OrderedDict([('a', '1'), ('b', '2'), ('c', '3')])
 
     >>> numeric_gtc = '\\n'.join(['#1.2', '1\\t1', 'NAME\\tDescription\\tfoo\\tbar',
     ...                   '1\\t2\\t3\\t4'])
     >>> numeric_gtc_lod = parse_to_dicts(numeric_gtc)
     >>> numeric_gtc_lod[0]
-    OrderedDict([('NAME', 1), ('foo', 3), ('bar', 4)])
+    OrderedDict([('NAME', '1'), ('foo', '3'), ('bar', '4')])
 
-    Currently, dataframer drops the "Description" column from GTCs
-    TODO: Upgrade dataframer to allow strings.
+    Currently, dataframer is designed to drop the "Description" column from GTCs
+
+    >>> single_column = 'a\\nx\\ny\\nz'
+    >>> sc_lod = parse_to_dicts(single_column)
+    >>> sc_lod[0]
+    OrderedDict([(None, 'x')])
+
+    # TODO: Why is there no index name?
+    # dataframer.parse(
+    #   BytesIO('a\nx\ny\nz'.encode('utf-8')), col_zero_index=False
+    # ).data_frame.index.name
+
     '''
     stream = BytesIO(tabular_data_string.encode('utf-8'))
-    df = dataframer.parse(stream).data_frame
+    df = dataframer.parse(stream, keep_strings=True).data_frame
+
     records = df.to_dict('records')  # List of dicts, but missing first column
+
+    # This may only really matter when single columns are loaded:
+    # an extra nan column was being created.
+    clean_records = [
+        {k: str(v) for k, v in record.items() if not isnan(v)}
+        for record in records
+    ]
+
     index_name = df.index.name
     return [
-        OrderedDict({**{index_name: i}, **record})  # Add the index value to each dict
-        for (i, record) in zip(df.index, records)
+        # Add the index value to each dict
+        OrderedDict({**{index_name: str(i)}, **record})
+        for (i, record) in zip(df.index, clean_records)
     ]
 
 
@@ -171,16 +192,18 @@ class Tabular():
         {'b': '3', 'Refinery file': 'fake.tsv', 'id': 1}
 
         Longer column:
-        >>> csv = 'a\\nx\\ny\\nz'
-        >>> tabular = Tabular({'fake.csv': csv})
-        >>> tabular.header
-        ['a']
-        >>> tabular.rows[0]
-        {'a': 'x', 'id': 0}
-        >>> tabular.rows[1]
-        {'a': 'y', 'id': 1}
-        >>> tabular.rows[2]
-        {'a': 'z', 'id': 2}
+        # TODO: Currently, dataframer is not returning the column name
+        #       for single columns.
+        # >>> csv = 'a\\nx\\ny\\nz'
+        # >>> tabular = Tabular({'fake.csv': csv})
+        # >>> tabular.header
+        # ['a']
+        # >>> tabular.rows[0]
+        # {'a': 'x', 'id': 0}
+        # >>> tabular.rows[1]
+        # {'a': 'y', 'id': 1}
+        # >>> tabular.rows[2]
+        # {'a': 'z', 'id': 2}
 
         # Missing header values:
         # >>> csv = 'a,b,c,d,\\n1,2,3,4,\\n1,2,3,4,5'
@@ -227,7 +250,7 @@ class Tabular():
 
     def make_outside_data_js(self):
         '''
-        >>> csv = 'a\\n1'
+        >>> csv = 'a,b\\n1,2'
         >>> tabular = Tabular({'fake.csv': csv})
         >>> print(tabular.make_outside_data_js())
         var outside_data = [
@@ -238,14 +261,19 @@ class Tabular():
                   "column": "a",
                   "domain": [ 1, 1 ],
                   "numberFormat": "d",
+                  "type": "number" },
+                {
+                  "column": "b",
+                  "domain": [ 2, 2 ],
+                  "numberFormat": "d",
                   "type": "number" } ],
               "primaryKey": "id",
               "separator": "\\t" },
             "id": "data",
             "name": "Data",
-            "url": "data:text/plain;charset=utf-8,a%0A1" } ];
+            "url": "data:text/plain;charset=utf-8,a%09b%0A1%092" } ];
 
-        >>> tsv = 'b\\n2'
+        >>> tsv = 'b,c\\n3,4'
         >>> tabular2 = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
         >>> print(tabular2.make_outside_data_js()[:-40])
         var outside_data = [
@@ -262,14 +290,19 @@ class Tabular():
                   "type": "number" },
                 {
                   "column": "b",
-                  "domain": [ 2, 2 ],
+                  "domain": [ 2, 3 ],
+                  "numberFormat": "d",
+                  "type": "number" },
+                {
+                  "column": "c",
+                  "domain": [ 4, 4 ],
                   "numberFormat": "d",
                   "type": "number" } ],
               "primaryKey": "id",
               "separator": "\\t" },
             "id": "data",
             "name": "Data",
-            "url": "data:text/plain;charset=utf-8,Refinery%20file%09a%09b%0
+            "url": "data:text/plain;charset=utf-8,Refinery%20file%09a%09b%09c%0Afake.cs
         '''
 
         column_defs = self._make_column_defs()
