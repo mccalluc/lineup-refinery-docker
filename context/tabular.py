@@ -1,8 +1,11 @@
+from collections import OrderedDict
 import urllib
-from csv import DictReader, Sniffer, Error
+from io import BytesIO
 import json
 import re
 from math import log2
+
+from dataframer import dataframer
 
 PRIMARY_KEY = 'id'
 
@@ -85,21 +88,30 @@ def typed(s):
             return s
 
 
-def parse_to_dicts(csv):
+def parse_to_dicts(tabular_data_string):
     '''
-    >>> gtc = '\\n'.join(['#1.2', '1\\t1', 'NAME\\tDESCRIPTION\\tfoo',
-    ...                   'a\\tb\\tc'])
-    >>> lod = parse_to_dicts(gtc)
-    >>> lod[0]
-    OrderedDict([('NAME', 'a'), ('DESCRIPTION', 'b'), ('foo', 'c')])
+    >>> csv = 'a,b,c\\n1,2,3\\n4,5,6'
+    >>> csv_lod = parse_to_dicts(csv)
+    >>> csv_lod[0]
+    OrderedDict([('a', 1), ('b', 2), ('c', 3)])
+
+    >>> numeric_gtc = '\\n'.join(['#1.2', '1\\t1', 'NAME\\tDescription\\tfoo\\tbar',
+    ...                   '1\\t2\\t3\\t4'])
+    >>> numeric_gtc_lod = parse_to_dicts(numeric_gtc)
+    >>> numeric_gtc_lod[0]
+    OrderedDict([('NAME', 1), ('foo', 3), ('bar', 4)])
+
+    Currently, dataframer drops the "Description" column from GTCs
+    TODO: Upgrade dataframer to allow strings.
     '''
-    lines = csv.splitlines()
-    if lines[0] == '#1.2':
-        # GTC format:
-        # http://software.broadinstitute.org/cancer/software/genepattern/file-formats-guide#GCT
-        lines = lines[2:]
-    dialect = Sniffer().sniff('\n'.join(lines[:10]))
-    return list(DictReader(lines, dialect=dialect))
+    stream = BytesIO(tabular_data_string.encode('utf-8'))
+    df = dataframer.parse(stream).data_frame
+    records = df.to_dict('records')  # List of dicts, but missing first column
+    index_name = df.index.name
+    return [
+        OrderedDict({**{index_name: i}, **record})  # Add the index value to each dict
+        for (i, record) in zip(df.index, records)
+    ]
 
 
 def add_k_v_to_each(k, v, list_of_dicts):
