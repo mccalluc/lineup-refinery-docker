@@ -96,13 +96,17 @@ def parse_to_dicts(tabular_data_string):
     >>> csv_lod[0]
     OrderedDict([('a', '1'), ('b', '2'), ('c', '3')])
 
-    >>> numeric_gtc = '\\n'.join(['#1.2', '1\\t1', 'NAME\\tDescription\\tfoo\\tbar',
-    ...                   '1\\t2\\t3\\t4'])
+    >>> numeric_gtc = '\\n'.join([
+    ...      '#1.2',
+    ...      '1\\t1',
+    ...      'NAME\\tDescription\\tfoo\\tbar',
+    ...      '1\\t2\\t3\\t4'])
     >>> numeric_gtc_lod = parse_to_dicts(numeric_gtc)
     >>> numeric_gtc_lod[0]
     OrderedDict([('NAME', '1'), ('foo', '3'), ('bar', '4')])
 
-    Currently, dataframer is designed to drop the "Description" column from GTCs
+    Currently, dataframer is designed to drop
+    the "Description" column from GTCs
 
     >>> single_column = 'a\\nx\\ny\\nz'
     >>> sc_lod = parse_to_dicts(single_column)
@@ -219,14 +223,7 @@ class Tabular():
             return
         dict_of_lists_of_dicts = {}
         for path, csv in path_data_dict.items():
-            try:
-                list_of_dicts = parse_to_dicts(csv)
-            except Error as e:
-                assert str(e) == 'Could not determine delimiter'
-                # Perhaps because it is a single column... Treat it that way.
-                lines = csv.splitlines()
-                key = lines[0]
-                list_of_dicts = [{key: line} for line in lines[1:]]
+            list_of_dicts = parse_to_dicts(csv)
             # If there is only one file, we don't need
             # an extra column to distinguish it.
             if len(path_data_dict) > 1:
@@ -275,7 +272,7 @@ class Tabular():
 
         >>> tsv = 'b,c\\n3,4'
         >>> tabular2 = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
-        >>> print(tabular2.make_outside_data_js()[:-40])
+        >>> print(tabular2.make_outside_data_js())
         var outside_data = [
           {
             "desc": {
@@ -302,8 +299,8 @@ class Tabular():
               "separator": "\\t" },
             "id": "data",
             "name": "Data",
-            "url": "data:text/plain;charset=utf-8,Refinery%20file%09a%09b%09c%0Afake.cs
-        '''
+            "url": "data:text/plain;charset=utf-8,Refinery%20file%09a%09b%09c%0Afake.csv%091%092%09%0Afake.tsv%09%093%094" } ];
+        '''   # noqa: E501
 
         column_defs = self._make_column_defs()
         tsv_encoded = urllib.parse.quote(self._make_tsv())
