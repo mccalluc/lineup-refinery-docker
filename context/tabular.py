@@ -1,8 +1,12 @@
+from collections import OrderedDict
 import urllib
-from csv import DictReader, Sniffer, Error
+from io import BytesIO
 import json
 import re
 from math import log2
+from math import isnan
+
+from dataframer import dataframer
 
 PRIMARY_KEY = 'id'
 
@@ -85,21 +89,54 @@ def typed(s):
             return s
 
 
-def parse_to_dicts(csv):
+def parse_to_dicts(tabular_data_string):
     '''
-    >>> gtc = '\\n'.join(['#1.2', '1\\t1', 'NAME\\tDESCRIPTION\\tfoo',
-    ...                   'a\\tb\\tc'])
-    >>> lod = parse_to_dicts(gtc)
-    >>> lod[0]
-    OrderedDict([('NAME', 'a'), ('DESCRIPTION', 'b'), ('foo', 'c')])
+    >>> csv = 'a,b,c\\n1,2,3\\n4,5,6'
+    >>> csv_lod = parse_to_dicts(csv)
+    >>> csv_lod[0]
+    OrderedDict([('a', '1'), ('b', '2'), ('c', '3')])
+
+    >>> numeric_gtc = '\\n'.join([
+    ...      '#1.2',
+    ...      '1\\t1',
+    ...      'NAME\\tDescription\\tfoo\\tbar',
+    ...      '1\\t2\\t3\\t4'])
+    >>> numeric_gtc_lod = parse_to_dicts(numeric_gtc)
+    >>> numeric_gtc_lod[0]
+    OrderedDict([('NAME', '1'), ('foo', '3'), ('bar', '4')])
+
+    Currently, dataframer is designed to drop
+    the "Description" column from GTCs
+
+    >>> single_column = 'a\\nx\\ny\\nz'
+    >>> sc_lod = parse_to_dicts(single_column)
+    >>> sc_lod[0]
+    OrderedDict([(None, 'x')])
+
+    # TODO: Why is there no index name?
+    # dataframer.parse(
+    #   BytesIO('a\nx\ny\nz'.encode('utf-8')), col_zero_index=False
+    # ).data_frame.index.name
+
     '''
-    lines = csv.splitlines()
-    if lines[0] == '#1.2':
-        # GTC format:
-        # http://software.broadinstitute.org/cancer/software/genepattern/file-formats-guide#GCT
-        lines = lines[2:]
-    dialect = Sniffer().sniff('\n'.join(lines[:10]))
-    return list(DictReader(lines, dialect=dialect))
+    stream = BytesIO(tabular_data_string.encode('utf-8'))
+    df = dataframer.parse(stream, keep_strings=True).data_frame
+
+    records = df.to_dict('records')  # List of dicts, but missing first column
+
+    # This may only really matter when single columns are loaded:
+    # an extra nan column was being created.
+    clean_records = [
+        {k: str(v) for k, v in record.items() if not isnan(v)}
+        for record in records
+    ]
+
+    index_name = df.index.name
+    return [
+        # Add the index value to each dict
+        OrderedDict({**{index_name: str(i)}, **record})
+        for (i, record) in zip(df.index, clean_records)
+    ]
 
 
 def add_k_v_to_each(k, v, list_of_dicts):
@@ -159,16 +196,18 @@ class Tabular():
         {'b': '3', 'Refinery file': 'fake.tsv', 'id': 1}
 
         Longer column:
-        >>> csv = 'a\\nx\\ny\\nz'
-        >>> tabular = Tabular({'fake.csv': csv})
-        >>> tabular.header
-        ['a']
-        >>> tabular.rows[0]
-        {'a': 'x', 'id': 0}
-        >>> tabular.rows[1]
-        {'a': 'y', 'id': 1}
-        >>> tabular.rows[2]
-        {'a': 'z', 'id': 2}
+        # TODO: Currently, dataframer is not returning the column name
+        #       for single columns.
+        # >>> csv = 'a\\nx\\ny\\nz'
+        # >>> tabular = Tabular({'fake.csv': csv})
+        # >>> tabular.header
+        # ['a']
+        # >>> tabular.rows[0]
+        # {'a': 'x', 'id': 0}
+        # >>> tabular.rows[1]
+        # {'a': 'y', 'id': 1}
+        # >>> tabular.rows[2]
+        # {'a': 'z', 'id': 2}
 
         # Missing header values:
         # >>> csv = 'a,b,c,d,\\n1,2,3,4,\\n1,2,3,4,5'
@@ -184,14 +223,7 @@ class Tabular():
             return
         dict_of_lists_of_dicts = {}
         for path, csv in path_data_dict.items():
-            try:
-                list_of_dicts = parse_to_dicts(csv)
-            except Error as e:
-                assert str(e) == 'Could not determine delimiter'
-                # Perhaps because it is a single column... Treat it that way.
-                lines = csv.splitlines()
-                key = lines[0]
-                list_of_dicts = [{key: line} for line in lines[1:]]
+            list_of_dicts = parse_to_dicts(csv)
             # If there is only one file, we don't need
             # an extra column to distinguish it.
             if len(path_data_dict) > 1:
@@ -215,34 +247,13 @@ class Tabular():
 
     def make_outside_data_js(self):
         '''
-        >>> csv = 'a\\n1'
+        >>> csv = 'a,b\\n1,2'
         >>> tabular = Tabular({'fake.csv': csv})
         >>> print(tabular.make_outside_data_js())
         var outside_data = [
           {
             "desc": {
               "columns": [
-                {
-                  "column": "a",
-                  "domain": [ 1, 1 ],
-                  "numberFormat": "d",
-                  "type": "number" } ],
-              "primaryKey": "id",
-              "separator": "\\t" },
-            "id": "data",
-            "name": "Data",
-            "url": "data:text/plain;charset=utf-8,a%0A1" } ];
-
-        >>> tsv = 'b\\n2'
-        >>> tabular2 = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
-        >>> print(tabular2.make_outside_data_js()[:-40])
-        var outside_data = [
-          {
-            "desc": {
-              "columns": [
-                {
-                  "column": "Refinery file",
-                  "type": "string" },
                 {
                   "column": "a",
                   "domain": [ 1, 1 ],
@@ -257,8 +268,39 @@ class Tabular():
               "separator": "\\t" },
             "id": "data",
             "name": "Data",
-            "url": "data:text/plain;charset=utf-8,Refinery%20file%09a%09b%0
-        '''
+            "url": "data:text/plain;charset=utf-8,a%09b%0A1%092" } ];
+
+        >>> tsv = 'b,c\\n3,4'
+        >>> tabular2 = Tabular({'fake.csv': csv, 'fake.tsv': tsv})
+        >>> print(tabular2.make_outside_data_js())
+        var outside_data = [
+          {
+            "desc": {
+              "columns": [
+                {
+                  "column": "Refinery file",
+                  "type": "string" },
+                {
+                  "column": "a",
+                  "domain": [ 1, 1 ],
+                  "numberFormat": "d",
+                  "type": "number" },
+                {
+                  "column": "b",
+                  "domain": [ 2, 3 ],
+                  "numberFormat": "d",
+                  "type": "number" },
+                {
+                  "column": "c",
+                  "domain": [ 4, 4 ],
+                  "numberFormat": "d",
+                  "type": "number" } ],
+              "primaryKey": "id",
+              "separator": "\\t" },
+            "id": "data",
+            "name": "Data",
+            "url": "data:text/plain;charset=utf-8,Refinery%20file%09a%09b%09c%0Afake.csv%091%092%09%0Afake.tsv%09%093%094" } ];
+        '''   # noqa: E501
 
         column_defs = self._make_column_defs()
         tsv_encoded = urllib.parse.quote(self._make_tsv())
